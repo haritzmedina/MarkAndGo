@@ -92,7 +92,7 @@ class GoogleSheetParser {
       // Retrieve index of "Author" column
       let indexOfAuthor = _.findIndex(sheet.data[0].rowData[0].values, (cell) => {
         if (cell && cell.formattedValue) {
-          return cell.formattedValue.toLowerCase() === 'author'
+          return cell.formattedValue.toLowerCase() === 'total'
         } else {
           return false
         }

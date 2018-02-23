@@ -138,19 +138,19 @@ class HypothesisGroupInitializer {
   }
 
   generateFacetAnnotationCorpus (facet) {
-    let tags = [Config.slrDataExtraction.namespace + ':' + Config.slrDataExtraction.tags.grouped.group + ':' + facet.name]
+    let tags = [Config.exams.namespace + ':' + Config.exams.tags.grouped.group + ':' + facet.name]
     if (facet.multivalued) {
-      tags.push(Config.slrDataExtraction.namespace + ':' + Config.slrDataExtraction.tags.statics.multivalued)
+      tags.push(Config.exams.namespace + ':' + Config.exams.tags.statics.multivalued)
     }
     if (facet.inductive) {
-      tags.push(Config.slrDataExtraction.namespace + ':' + Config.slrDataExtraction.tags.statics.inductive)
+      tags.push(Config.exams.namespace + ':' + Config.exams.tags.statics.inductive)
     }
     return this.generateAnnotationCorpus(tags)
   }
 
   generateCodeAnnotationCorpus (code) {
-    let codeTag = Config.slrDataExtraction.namespace + ':' + Config.slrDataExtraction.tags.grouped.subgroup + ':' + code.name
-    let isCodeOfTag = Config.slrDataExtraction.namespace + ':' + Config.slrDataExtraction.tags.grouped.relation + ':' + code.facet
+    let codeTag = Config.exams.namespace + ':' + Config.exams.tags.grouped.subgroup + ':' + code.name
+    let isCodeOfTag = Config.exams.namespace + ':' + Config.exams.tags.grouped.relation + ':' + code.facet
     let tags = [codeTag, isCodeOfTag]
     return this.generateAnnotationCorpus(tags)
   }
@@ -194,7 +194,7 @@ class HypothesisGroupInitializer {
         read: ['group:' + this.mappingStudy.hypothesisGroup.id]
       },
       references: [],
-      tags: [Config.slrDataExtraction.namespace + ':' + Config.slrDataExtraction.tags.statics.spreadsheet],
+      tags: [Config.exams.namespace + ':' + Config.exams.tags.statics.spreadsheet],
       target: [],
       text: 'spreadsheetId: ' + this.mappingStudy.spreadsheetId + '\n' + 'sheetId: ' + this.mappingStudy.sheetId,
       uri: this.mappingStudy.hypothesisGroup.url // Group url

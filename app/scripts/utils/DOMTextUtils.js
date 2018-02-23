@@ -52,6 +52,7 @@ class DOMTextUtils {
   static highlightContent (selectors, className, id, data) {
     let range = this.retrieveRange(selectors)
     let nodes = DOM.getLeafNodesInRange(range)
+    debugger
     if (nodes.length > 0) {
       let startNode = nodes.shift()
       if (nodes.length > 0) { // start and end nodes are not the same

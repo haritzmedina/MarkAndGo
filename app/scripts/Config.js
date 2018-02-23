@@ -8,21 +8,41 @@ const Config = {
     tags: {}
   },
   slrDataExtraction: {
-    contentAnnotator: 'text',
-    namespace: 'slr',
+    contentAnnotator: 'text', // Type of content annotator
+    namespace: 'slr', // Namespace for the annotations
     sidebar: {},
-    location: true,
-    tags: {
-      grouped: {
+    location: true, // Location mode
+    tags: { // Defined tags for the domain
+      grouped: { // Grouped annotations
         group: 'facet',
         subgroup: 'code',
         relation: 'isCodeOf'
       },
-      statics: {
+      statics: { // Other static tags used in the domain
         multivalued: 'multivalued',
         inductive: 'inductive',
         validated: 'validated',
         spreadsheet: 'spreadsheet'
+      }
+    }
+  },
+  exams: {
+    contentAnnotator: 'text',
+    namespace: 'exam',
+    sidebar: {},
+    location: true,
+    pattern: '',
+    tags: { // Defined tags for the domain
+      grouped: { // Grouped annotations
+        group: 'criteria',
+        subgroup: 'mark',
+        relation: 'isCriteriaOf'
+      },
+      statics: { // Other static tags used in the domain
+        inductive: 'inductive',
+        validated: 'validated',
+        spreadsheet: 'spreadsheet',
+        documentNames: 'documentNames'
       }
     }
   }
