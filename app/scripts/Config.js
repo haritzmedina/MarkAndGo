@@ -39,10 +39,11 @@ const Config = {
         relation: 'isCriteriaOf'
       },
       statics: { // Other static tags used in the domain
+        multivalued: 'multivalued',
         inductive: 'inductive',
         validated: 'validated',
         spreadsheet: 'spreadsheet',
-        documentNames: 'documentNames'
+        teacher: 'teacher'
       }
     }
   }
