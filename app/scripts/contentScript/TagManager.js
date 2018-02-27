@@ -115,7 +115,7 @@ class TagManager {
       order: 'desc'
     }, (err, annotations) => {
       if (err) {
-        alert('Unable to retrieve document annotations')
+        window.alert('Unable to retrieve document annotations') // TODO Swal
       } else {
         // Retrieve tags which has the namespace
         annotations = _.filter(annotations, (annotation) => {

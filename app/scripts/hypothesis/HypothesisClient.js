@@ -126,7 +126,7 @@ class HypothesisClient {
       }
     }
     $.ajax(settings).done((response) => {
-      callback(response)
+      callback(null, response)
     })
   }
 
@@ -313,7 +313,7 @@ Content-Disposition: form-data; name="submit"
 submit
 -----------------------------sep--
 `
-        let req = new XMLHttpRequest()
+        let req = new window.XMLHttpRequest()
         req.open('POST', 'https://hypothes.is/groups/new', true)
         req.setRequestHeader('Content-Type', 'multipart/form-data; boundary=---------------------------sep')
         req.onload = function () {
