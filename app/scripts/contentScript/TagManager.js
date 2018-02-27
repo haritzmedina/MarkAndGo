@@ -359,16 +359,21 @@ class TagManager {
         // If has subgroup
         if (annotationGroupData.subgroup) {
           let tagName = annotationGroupData.subgroup
-          let color = _.find(window.abwa.tagManager.getTagsList(), (tag) => { return tag.name === tagName }).color
-          groupTags[annotationGroupData.group].tags.push(new Tag({
-            name: tagName,
-            namespace: this.model.namespace,
-            options: {color: color},
-            tags: [
-              this.model.namespace + ':' + this.model.config.grouped.relation + ':' + annotationGroupData.group,
-              this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + annotationGroupData.subgroup
-            ]
-          }))
+          let tagGroup = _.find(window.abwa.tagManager.model.currentTags, (groupTag) => { return groupTag.config.name === annotationGroupData.group })
+          let tag = _.find(tagGroup.tags, (tag) => { return tag.name === annotationGroupData.subgroup })
+          if (_.has(tag, 'color')) {
+            groupTags[annotationGroupData.group].tags.push(new Tag({
+              name: tagName,
+              namespace: this.model.namespace,
+              options: {color: tag.color},
+              tags: [
+                this.model.namespace + ':' + this.model.config.grouped.relation + ':' + annotationGroupData.group,
+                this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + annotationGroupData.subgroup
+              ]
+            }))
+          } else {
+            console.error('Error parsing tags in sidebar') // TODO Show user
+          }
         } else { // If doesn't have subgroup (free category)
           let tagName = annotationGroupData.group
           let color = _.find(window.abwa.tagManager.getTagsList(), (tag) => { return tag.name === tagName }).color
