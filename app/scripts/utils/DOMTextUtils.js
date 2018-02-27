@@ -52,7 +52,6 @@ class DOMTextUtils {
   static highlightContent (selectors, className, id, data) {
     let range = this.retrieveRange(selectors)
     let nodes = DOM.getLeafNodesInRange(range)
-    debugger
     if (nodes.length > 0) {
       let startNode = nodes.shift()
       if (nodes.length > 0) { // start and end nodes are not the same
@@ -64,18 +63,14 @@ class DOMTextUtils {
         startWrapper.dataset.annotationId = id
         startWrapper.dataset.startNode = ''
         startWrapper.dataset.highlightClassName = className
-        startWrapper.innerText = startNode.nodeValue.slice(range.startOffset, startNode.nodeValue.length)
-        let nonHighlightedText = startNode.nodeValue.slice(0, range.startOffset)
-        this.replaceContent(startNode, nonHighlightedText + startWrapper.outerHTML)
+        DOMTextUtils.wrapNodeContent(startNode, startWrapper, range.startOffset, startNode.nodeValue.length)
         // End node
         let endWrapper = document.createElement('mark')
         $(endWrapper).addClass(className)
         endWrapper.dataset.annotationId = id
         endWrapper.dataset.endNode = ''
         endWrapper.dataset.highlightClassName = className
-        endWrapper.innerText = endNode.nodeValue.slice(0, range.endOffset)
-        nonHighlightedText = endNode.nodeValue.slice(range.endOffset, endNode.nodeValue.length)
-        this.replaceContent(endNode, endWrapper.outerHTML + nonHighlightedText)
+        DOMTextUtils.wrapNodeContent(endNode, endWrapper, 0, range.endOffset)
         // Nodes between
         nodesBetween.forEach(nodeBetween => {
           let leafNodes = this.retrieveLeafNodes(nodeBetween)
@@ -95,12 +90,36 @@ class DOMTextUtils {
         $(wrapper).addClass(className)
         wrapper.dataset.highlightClassName = className
         wrapper.dataset.annotationId = id
-        wrapper.innerHTML = startNode.nodeValue.slice(range.startOffset, range.endOffset)
-        let newStringifiedContent = startNode.nodeValue.slice(0, range.startOffset) + wrapper.outerHTML + startNode.nodeValue.slice(range.endOffset, startNode.nodeValue.length)
-        DOMTextUtils.replaceContent(startNode, newStringifiedContent)
+        DOMTextUtils.wrapNodeContent(startNode, wrapper, range.startOffset, range.endOffset)
       }
     }
     return document.querySelectorAll('[data-annotation-id=\'' + id + '\']')
+  }
+
+  /**
+   * Wraps node content from start to end position in the wrapper
+   * @param node
+   * @param wrapper
+   * @param startPosition
+   * @param endPosition
+   */
+  static wrapNodeContent (node, wrapper, startPosition, endPosition) {
+    if (node.nodeType === 3) {
+      wrapper.textContent = node.nodeValue.slice(startPosition, endPosition)
+      let nodeArray = [
+        document.createTextNode(node.nodeValue.slice(0, startPosition)), // Previous to wrapper text
+        wrapper.outerHTML, // Highlighted text
+        document.createTextNode(node.nodeValue.slice(endPosition, node.nodeValue.length)) // After to wrapper text
+      ]
+      node.parentNode.insertBefore(nodeArray[0], node)
+      node.parentNode.insertBefore($(nodeArray[1])[0], node)
+      node.parentNode.insertBefore(nodeArray[2], node)
+      node.parentNode.removeChild(node) // Remove original node
+    } else {
+      wrapper.innerHTML = node.nodeValue.slice(startPosition, endPosition)
+      let newStringifiedContent = node.nodeValue.slice(0, startPosition) + wrapper.outerHTML + node.nodeValue.slice(endPosition, node.nodeValue.length)
+      DOMTextUtils.replaceContent(node, newStringifiedContent)
+    }
   }
 
   static retrieveRange (selectors) {
@@ -139,7 +158,7 @@ class DOMTextUtils {
   }
 
   static retrieveFirstTextNode (element) {
-    if (element.nodeType === Node.TEXT_NODE) {
+    if (element.nodeType === window.Node.TEXT_NODE) {
       return element
     } else {
       if (element.firstChild) {
