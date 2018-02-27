@@ -34,6 +34,12 @@ class TextAnnotator extends ContentAnnotator {
         this.currentUserProfile = window.abwa.groupSelector.user
         this.loadAnnotations(() => {
           this.initAnnotatorByAnnotation(() => {
+            // Check if something is selected after loading annotations and display sidebar
+            if (document.getSelection().toString().length !== 0) {
+              if ($(document.getSelection().anchorNode).parents('#abwaSidebarWrapper').toArray().length === 0) {
+                this.openSidebar()
+              }
+            }
             if (_.isFunction(callback)) {
               callback()
             }
@@ -144,12 +150,12 @@ class TextAnnotator extends ContentAnnotator {
       let selectors = []
       // If selection is empty, return null
       if (document.getSelection().toString().length === 0) {
-        alert('Nothing to highlight, current selection is empty') // Show user message
+        window.alert('Nothing to highlight, current selection is empty') // TODO change by swal
         return
       }
       // If selection is child of sidebar, return null
       if ($(document.getSelection().anchorNode).parents('#annotatorSidebarWrapper').toArray().length !== 0) {
-        alert('The selected content cannot be highlighted, is not part of the document') // Show user message
+        window.alert('The selected content cannot be highlighted, is not part of the document') // TODO change by swal
         return
       }
       let range = document.getSelection().getRangeAt(0)
@@ -186,7 +192,7 @@ class TextAnnotator extends ContentAnnotator {
       let annotation = TextAnnotator.constructAnnotation(selectors, event.detail.tags)
       window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(annotation, (err, annotation) => {
         if (err) {
-          alert('Unexpected error, unable to create annotation')
+          window.alert('Unexpected error, unable to create annotation')
         } else {
           // Add to annotations
           this.currentAnnotations.push(annotation)
@@ -250,6 +256,7 @@ class TextAnnotator extends ContentAnnotator {
 
   initSelectionEvents (callback) {
     if (_.isEmpty(window.abwa.annotationBasedInitializer.initAnnotation)) {
+      // Create selection event
       this.activateSelectionEvent(() => {
         if (_.isFunction(callback)) {
           callback()
@@ -509,7 +516,7 @@ class TextAnnotator extends ContentAnnotator {
                   if (!result.deleted) {
                     // Alert user error happened
                     // TODO swal
-                    alert('Error deleting hypothesis annotation, please try it again')
+                    window.alert('Error deleting hypothesis annotation, please try it again')
                   } else {
                     // Remove annotation from data model
                     _.remove(this.currentAnnotations, (currentAnnotation) => {
@@ -541,7 +548,7 @@ class TextAnnotator extends ContentAnnotator {
   }
 
   mouseUpOnDocumentHandlerConstructor () {
-    return () => {
+    return (event) => {
       // Check if something is selected
       if (document.getSelection().toString().length !== 0) {
         if ($(event.target).parents('#abwaSidebarWrapper').toArray().length === 0) {
