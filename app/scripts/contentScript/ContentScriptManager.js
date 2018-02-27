@@ -174,6 +174,10 @@ class ContentScriptManager {
       const SLRDataExtractionContentScript = require('../specific/slrDataExtraction/SLRDataExtractionContentScript')
       window.abwa.specificContentManager = new SLRDataExtractionContentScript(config)
       window.abwa.specificContentManager.init()
+    } else if (config.namespace === 'exam') {
+      const ExamDataExtractionContentScript = require('../specific/exams/ExamDataExtractionContentScript')
+      window.abwa.specificContentManager = new ExamDataExtractionContentScript(config)
+      window.abwa.specificContentManager.init()
     }
   }
 
