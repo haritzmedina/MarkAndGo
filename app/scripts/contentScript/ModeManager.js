@@ -95,6 +95,21 @@ class ModeManager {
       callback()
     }
   }
+
+  programmaticallyChangeToIndexMode () {
+    this.setIndexMode()
+    LanguageUtils.dispatchCustomEvent(Events.modeChanged, {mode: this.mode})
+  }
+
+  programmaticallyDisableModeSelector () {
+    let annotatorToggle = document.querySelector('#annotatorToggle')
+    annotatorToggle.disabled = true
+  }
+
+  programaticallyChangeToHighlightMode () {
+    this.setHighlightMode()
+    LanguageUtils.dispatchCustomEvent(Events.modeChanged, {mode: this.mode})
+  }
 }
 
 ModeManager.modes = {
