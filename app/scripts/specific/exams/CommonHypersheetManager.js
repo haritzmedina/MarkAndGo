@@ -440,9 +440,9 @@ class CommonHypersheetManager {
           let codeCell = codeCells[i]
           let link = CommonHypersheetManager.getAnnotationUrl(codeCell.annotation, primaryStudyLink)
           let value = codeCell.code
-          let formulaValue = '=HYPERLINK("' + link + '", "' + value + '")'
+          let formulaValue = '=HYPERLINK("' + link + '"; "' + value + '")'
           if (!_.isNaN(_.toNumber(value))) { // If is a number, change
-            formulaValue = '=HYPERLINK("' + link + '", ' + _.toNumber(value) + ')'
+            formulaValue = '=HYPERLINK("' + link + '"; ' + _.toNumber(value) + ')'
           }
           gSheetCells.push({
             'userEnteredFormat': {
