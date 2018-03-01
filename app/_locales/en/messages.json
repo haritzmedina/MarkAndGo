@@ -1,10 +1,10 @@
 {
   "appName": {
-    "message": "Correct&Go",
+    "message": "Mark&Go",
     "description": "The name of the application"
   },
   "appShortName": {
-    "message": "Correct&Go",
+    "message": "Mark&Go",
     "description": "The short_name (maximum of 12 characters recommended) is a short version of the app's name."
   },
   "appDescription": {
