@@ -6,6 +6,7 @@ const MappingStudyManager = require('./MappingStudyManager')
 const CreateAnnotationManager = require('./CreateAnnotationManager')
 const DeleteAnnotationManager = require('./DeleteAnnotationManager')
 const ValidateAnnotationManager = require('./ValidateAnnotationManager')
+const ReorderSpreadsheet = require('./ReorderSpreadsheet')
 const Config = require('../../Config')
 
 class ExamDataExtractionContentScript {
@@ -30,6 +31,9 @@ class ExamDataExtractionContentScript {
             // Retrieve primary study sheet
             window.abwa.specific.primaryStudySheetManager = new PrimaryStudySheetManager()
             window.abwa.specific.primaryStudySheetManager.init(() => {
+              // Change order of elements in tag manager
+              window.abwa.specific.reorderSpreadsheet = new ReorderSpreadsheet()
+              window.abwa.specific.reorderSpreadsheet.init()
               // Create link to back to spreadsheet
               window.abwa.specific.backToSpreadsheetLink = new BackToSpreadsheetLink()
               window.abwa.specific.backToSpreadsheetLink.init()
