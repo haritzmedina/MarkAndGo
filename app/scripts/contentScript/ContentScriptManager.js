@@ -73,9 +73,13 @@ class ContentScriptManager {
         // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
         this.reloadTagsManager(config, () => {
           this.reloadContentAnnotator(config, () => {
-            this.reloadUserFilter(config, () => {
+            if (config.userFilter) {
+              this.reloadUserFilter(config, () => {
+                this.reloadSpecificContentManager(config)
+              })
+            } else {
               this.reloadSpecificContentManager(config)
-            })
+            }
           })
         })
         this.reloadAugmentationOperations(config)

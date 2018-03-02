@@ -12,13 +12,14 @@ const Config = {
     namespace: 'slr', // Namespace for the annotations
     sidebar: {},
     location: true, // Location mode
+    userFilter: true,
     tags: { // Defined tags for the domain
       grouped: { // Grouped annotations
         group: 'facet',
         subgroup: 'code',
         relation: 'isCodeOf'
       },
-      statics: { // Other static tags used in the domain
+      statics: { // Other static tags specific for the domain
         multivalued: 'multivalued',
         inductive: 'inductive',
         validated: 'validated',
@@ -38,7 +39,7 @@ const Config = {
         subgroup: 'mark',
         relation: 'isCriteriaOf'
       },
-      statics: { // Other static tags used in the domain
+      statics: { // Other static tags specific for the domain
         multivalued: 'multivalued',
         inductive: 'inductive',
         validated: 'validated',
