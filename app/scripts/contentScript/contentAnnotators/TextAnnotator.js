@@ -11,7 +11,7 @@ require('jquery-contextmenu/dist/jquery.contextMenu')
 const _ = require('lodash')
 require('components-jqueryui')
 
-const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
+const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 1
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
 
 class TextAnnotator extends ContentAnnotator {
@@ -130,7 +130,6 @@ class TextAnnotator extends ContentAnnotator {
         // Highlight only annotations from current user
         this.currentAnnotations = this.retrieveCurrentAnnotations()
         LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
-        this.highlightAnnotations(this.currentAnnotations)
         // Activate selection event and sidebar functionality
         this.activateSelectionEvent()
       }
@@ -299,7 +298,7 @@ class TextAnnotator extends ContentAnnotator {
           let element = document.querySelector('[data-annotation-id="' + annotation.id + '"]')
           // If annotation doesn't exist, try to find it
           if (!_.isElement(element)) {
-            setTimeout(() => { this.highlightAnnotation(annotation) }, 0)
+            Promise.resolve().then(() => { this.highlightAnnotation(annotation) })
           }
         }
       }
