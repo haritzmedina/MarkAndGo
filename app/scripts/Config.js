@@ -44,7 +44,8 @@ const Config = {
         inductive: 'inductive',
         validated: 'validated',
         spreadsheet: 'spreadsheet',
-        teacher: 'teacher'
+        teacher: 'teacher',
+        reviewed: 'reviewed'
       }
     }
   }

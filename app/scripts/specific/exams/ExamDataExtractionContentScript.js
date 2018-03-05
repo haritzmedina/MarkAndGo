@@ -8,6 +8,7 @@ const DeleteAnnotationManager = require('./DeleteAnnotationManager')
 const StudentsNavigationRing = require('./StudentsNavigationRing')
 const ValidateAnnotationManager = require('./ValidateAnnotationManager')
 const ReorderSpreadsheet = require('./ReorderSpreadsheet')
+const StudentLogging = require('./StudentLogging')
 const Config = require('../../Config')
 
 class ExamDataExtractionContentScript {
@@ -60,6 +61,10 @@ class ExamDataExtractionContentScript {
           window.abwa.modeManager.programmaticallyChangeToIndexMode()
           window.abwa.modeManager.programmaticallyDisableModeSelector()
           window.abwa.sidebar.openSidebar()
+          window.abwa.specific = window.abwa.specific || {}
+          // Log student reviewed the exam
+          window.abwa.specific.studentLogging = new StudentLogging()
+          window.abwa.specific.studentLogging.init()
           if (_.isFunction(callback)) {
             callback()
           }
