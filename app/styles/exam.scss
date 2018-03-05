@@ -1,3 +1,15 @@
 .tagContainer[data-exam-hidden="true"] {
   display: none;
 }
+
+.navigationRingLink[aria-disabled="true"] {
+  cursor: default;
+}
+
+.navigationRingLink[aria-disabled="true"] img {
+  opacity: 0.4;
+}
+
+#studentNavigationRingPrevious {
+  margin-left: 35px;
+}

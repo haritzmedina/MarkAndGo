@@ -5,6 +5,7 @@ const PrimaryStudySheetManager = require('./PrimaryStudySheetManager')
 const MappingStudyManager = require('./MappingStudyManager')
 const CreateAnnotationManager = require('./CreateAnnotationManager')
 const DeleteAnnotationManager = require('./DeleteAnnotationManager')
+const StudentsNavigationRing = require('./StudentsNavigationRing')
 const ValidateAnnotationManager = require('./ValidateAnnotationManager')
 const ReorderSpreadsheet = require('./ReorderSpreadsheet')
 const Config = require('../../Config')
@@ -16,7 +17,7 @@ class ExamDataExtractionContentScript {
   }
 
   init (callback) {
-    // TODO Only enable if current user is the teacher (or creator of the spreadsheet)
+    // Enable different functionality if current user is the teacher or student
     this.currentUserIsTeacher((err, isTeacher) => {
       if (err) {
         if (_.isFunction(callback)) {
@@ -33,22 +34,26 @@ class ExamDataExtractionContentScript {
             window.abwa.specific.primaryStudySheetManager.init(() => {
               // Change order of elements in tag manager
               window.abwa.specific.reorderSpreadsheet = new ReorderSpreadsheet()
-              window.abwa.specific.reorderSpreadsheet.init()
-              // Create link to back to spreadsheet
-              window.abwa.specific.backToSpreadsheetLink = new BackToSpreadsheetLink()
-              window.abwa.specific.backToSpreadsheetLink.init()
-              // Create annotation handler
-              window.abwa.specific.createAnnotationManager = new CreateAnnotationManager()
-              window.abwa.specific.createAnnotationManager.init()
-              // Delete annotation handler
-              window.abwa.specific.deleteAnnotationManager = new DeleteAnnotationManager()
-              window.abwa.specific.deleteAnnotationManager.init()
-              // Validation handler
-              window.abwa.specific.validateAnnotationManager = new ValidateAnnotationManager()
-              window.abwa.specific.validateAnnotationManager.init()
-              if (_.isFunction(callback)) {
-                callback()
-              }
+              window.abwa.specific.reorderSpreadsheet.init(() => {
+                // Create link to back to spreadsheet
+                window.abwa.specific.backToSpreadsheetLink = new BackToSpreadsheetLink()
+                window.abwa.specific.backToSpreadsheetLink.init()
+                // Create navigation ring
+                window.abwa.specific.navigationRing = new StudentsNavigationRing()
+                window.abwa.specific.navigationRing.init()
+                // Create annotation handler
+                window.abwa.specific.createAnnotationManager = new CreateAnnotationManager()
+                window.abwa.specific.createAnnotationManager.init()
+                // Delete annotation handler
+                window.abwa.specific.deleteAnnotationManager = new DeleteAnnotationManager()
+                window.abwa.specific.deleteAnnotationManager.init()
+                // Validation handler
+                window.abwa.specific.validateAnnotationManager = new ValidateAnnotationManager()
+                window.abwa.specific.validateAnnotationManager.init()
+                if (_.isFunction(callback)) {
+                  callback()
+                }
+              })
             })
           })
         } else { // Change to checker mode
@@ -59,6 +64,7 @@ class ExamDataExtractionContentScript {
             callback()
           }
         }
+        // Enable screenshot functionality
       }
     })
   }

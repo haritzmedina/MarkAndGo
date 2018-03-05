@@ -112,7 +112,6 @@ class ContentTypeManager {
   }
 
   initSupportWebURLChange () {
-    debugger
     this.urlChangeInterval = setInterval(() => {
       let newUrl = URLUtils.retrieveMainUrl(window.location.href)
       if (newUrl !== this.documentURL) {
