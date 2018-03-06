@@ -46,51 +46,59 @@ class DOMTextUtils {
    * @param className
    * @param id
    * @param data
+   * @param exhaustive
    * @returns {NodeList}
    * @throws TypeError
    */
-  static highlightContent (selectors, className, id, data) {
-    let range = this.retrieveRange(selectors)
-    let nodes = DOM.getLeafNodesInRange(range)
-    if (nodes.length > 0) {
-      let startNode = nodes.shift()
-      if (nodes.length > 0) { // start and end nodes are not the same
-        let endNode = nodes.pop()
-        let nodesBetween = nodes
-        // Start node
-        let startWrapper = document.createElement('mark')
-        $(startWrapper).addClass(className)
-        startWrapper.dataset.annotationId = id
-        startWrapper.dataset.startNode = ''
-        startWrapper.dataset.highlightClassName = className
-        DOMTextUtils.wrapNodeContent(startNode, startWrapper, range.startOffset, startNode.nodeValue.length)
-        // End node
-        let endWrapper = document.createElement('mark')
-        $(endWrapper).addClass(className)
-        endWrapper.dataset.annotationId = id
-        endWrapper.dataset.endNode = ''
-        endWrapper.dataset.highlightClassName = className
-        DOMTextUtils.wrapNodeContent(endNode, endWrapper, 0, range.endOffset)
-        // Nodes between
-        nodesBetween.forEach(nodeBetween => {
-          let leafNodes = this.retrieveLeafNodes(nodeBetween)
-          for (let i = 0; i < leafNodes.length; i++) {
-            if (leafNodes[i].textContent.length > 0 && (leafNodes[i].parentNode !== endNode && leafNodes[i].parentNode !== startNode)) {
-              let wrapper = document.createElement('mark')
-              $(wrapper).addClass(className)
-              wrapper.dataset.annotationId = id
-              wrapper.dataset.endNode = ''
-              wrapper.dataset.highlightClassName = className
-              $(leafNodes[i]).wrap(wrapper)
+  static highlightContent (selectors, className, id, data, exhaustive = true) {
+    let range
+    if (exhaustive) {
+      range = this.retrieveRange(selectors, true)
+    } else {
+      range = this.retrieveRange(selectors)
+    }
+    if (range) {
+      let nodes = DOM.getLeafNodesInRange(range)
+      if (nodes.length > 0) {
+        let startNode = nodes.shift()
+        if (nodes.length > 0) { // start and end nodes are not the same
+          let endNode = nodes.pop()
+          let nodesBetween = nodes
+          // Start node
+          let startWrapper = document.createElement('mark')
+          $(startWrapper).addClass(className)
+          startWrapper.dataset.annotationId = id
+          startWrapper.dataset.startNode = ''
+          startWrapper.dataset.highlightClassName = className
+          DOMTextUtils.wrapNodeContent(startNode, startWrapper, range.startOffset, startNode.nodeValue.length)
+          // End node
+          let endWrapper = document.createElement('mark')
+          $(endWrapper).addClass(className)
+          endWrapper.dataset.annotationId = id
+          endWrapper.dataset.endNode = ''
+          endWrapper.dataset.highlightClassName = className
+          DOMTextUtils.wrapNodeContent(endNode, endWrapper, 0, range.endOffset)
+          // Nodes between
+          nodesBetween.forEach(nodeBetween => {
+            let leafNodes = this.retrieveLeafNodes(nodeBetween)
+            for (let i = 0; i < leafNodes.length; i++) {
+              if (leafNodes[i].textContent.length > 0 && (leafNodes[i].parentNode !== endNode && leafNodes[i].parentNode !== startNode)) {
+                let wrapper = document.createElement('mark')
+                $(wrapper).addClass(className)
+                wrapper.dataset.annotationId = id
+                wrapper.dataset.endNode = ''
+                wrapper.dataset.highlightClassName = className
+                $(leafNodes[i]).wrap(wrapper)
+              }
             }
-          }
-        })
-      } else {
-        let wrapper = document.createElement('mark')
-        $(wrapper).addClass(className)
-        wrapper.dataset.highlightClassName = className
-        wrapper.dataset.annotationId = id
-        DOMTextUtils.wrapNodeContent(startNode, wrapper, range.startOffset, range.endOffset)
+          })
+        } else {
+          let wrapper = document.createElement('mark')
+          $(wrapper).addClass(className)
+          wrapper.dataset.highlightClassName = className
+          wrapper.dataset.annotationId = id
+          DOMTextUtils.wrapNodeContent(startNode, wrapper, range.startOffset, range.endOffset)
+        }
       }
     }
     return document.querySelectorAll('[data-annotation-id=\'' + id + '\']')
@@ -122,21 +130,61 @@ class DOMTextUtils {
     }
   }
 
-  static retrieveRange (selectors) {
+  static retrieveRange (selectors, exhaustive = true) {
     let fragmentSelector = _.find(selectors, (selector) => { return selector.type === 'FragmentSelector' })
+    let rangeSelector = _.find(selectors, (selector) => { return selector.type === 'RangeSelector' })
     let textQuoteSelector = _.find(selectors, (selector) => { return selector.type === 'TextQuoteSelector' })
     let textPositionSelector = _.find(selectors, (selector) => { return selector.type === 'TextPositionSelector' })
     let range = null
-    if (fragmentSelector) { // It is an element of DOM
-      let fragmentElement = document.querySelector('#' + fragmentSelector.value)
-      range = DOMTextUtils.tryRetrieveRangeTextSelector(fragmentElement, textQuoteSelector)
+    if (_.isObject(fragmentSelector) || _.isObject(rangeSelector)) { // It is an element of DOM
+      let fragmentElement = null
+      if (_.has(fragmentSelector, 'value')) {
+        fragmentElement = document.querySelector('#' + fragmentSelector.value)
+      }
+      if (_.isElement(fragmentElement)) {
+        range = DOMTextUtils.tryRetrieveRangeTextSelector(fragmentElement, textQuoteSelector)
+      } else {
+        let startRangeElement = null
+        if (_.has(rangeSelector, 'startContainer')) {
+          startRangeElement = document.evaluate(rangeSelector.startContainer, document, null, window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+        }
+        let endRangeElement = null
+        if (_.has(rangeSelector, 'endContainer')) {
+          endRangeElement = document.evaluate(rangeSelector.endContainer, document, null, window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+        }
+        if (_.isElement(startRangeElement) && _.isElement(endRangeElement)) {
+          range = DOMTextUtils.tryRetrieveRangeTextSelector(fragmentElement, textQuoteSelector)
+        } else {
+          range = DOMTextUtils.tryRetrieveRangeTextPositionSelector(textPositionSelector, textQuoteSelector.exact)
+          if (!range) {
+            if (exhaustive) { // Try by hard exhaustive
+              range = DOMTextUtils.tryRetrieveRangeTextSelector(document.body, textQuoteSelector)
+            }
+          }
+        }
+      }
     } else if (textQuoteSelector && textPositionSelector) { // It is a text of PDF
-      range = DOMTextUtils.tryRetrieveRangeTextSelector(document.body, textQuoteSelector)
+      range = DOMTextUtils.tryRetrieveRangeTextPositionSelector(textPositionSelector, textQuoteSelector.exact)
+      if (!range) {
+        if (exhaustive) { // Try by hard exhaustive
+          range = DOMTextUtils.tryRetrieveRangeTextSelector(document.body, textQuoteSelector)
+        }
+      }
     }
     return range
   }
 
+  static tryRetrieveRangeTextPositionSelector (textPositionSelector, exactText) {
+    let possibleRange = domAnchorTextPosition.toRange(document.body, textPositionSelector.start, textPositionSelector.end)
+    if (possibleRange && possibleRange.toString() === exactText) {
+      return possibleRange
+    } else {
+      return null
+    }
+  }
+
   static tryRetrieveRangeTextSelector (fragmentElement, textQuoteSelector) {
+    // TODO Improve code prioritizing textposition instead of text quote. See issue https://github.com/haritzmedina/highlightAndGo/issues/6
     if (fragmentElement === document) {
       return null
     }

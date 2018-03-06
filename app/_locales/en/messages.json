@@ -8,7 +8,7 @@
     "description": "The short_name (maximum of 12 characters recommended) is a short version of the app's name."
   },
   "appDescription": {
-    "message": "Highlight students' exam corrections and go!",
+    "message": "Mark students' exams through highlights and go!",
     "description": "The description of the application"
   },
   "browserActionTitle": {
@@ -32,15 +32,15 @@
     "description": "Sidebar mode header"
   },
   "Highlight": {
-    "message": "Mapping",
+    "message": "Mark",
     "description": "Sidebar highlight label"
   },
   "Index": {
-    "message": "Checker",
+    "message": "Review",
     "description": "Sidebar index label"
   },
   "Dimensions": {
-    "message": "Facets",
+    "message": "Criteria",
     "description": "Sidebar dimensions header"
   }
 }

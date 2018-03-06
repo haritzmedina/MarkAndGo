@@ -11,7 +11,7 @@ require('jquery-contextmenu/dist/jquery.contextMenu')
 const _ = require('lodash')
 require('components-jqueryui')
 
-const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 1
+const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
 
 class TextAnnotator extends ContentAnnotator {
@@ -29,17 +29,17 @@ class TextAnnotator extends ContentAnnotator {
 
   init (callback) {
     this.initEvents(() => {
-      this.initAnnotationsObserver(() => {
-        // Retrieve current user profile
-        this.currentUserProfile = window.abwa.groupSelector.user
-        this.loadAnnotations(() => {
-          this.initAnnotatorByAnnotation(() => {
-            // Check if something is selected after loading annotations and display sidebar
-            if (document.getSelection().toString().length !== 0) {
-              if ($(document.getSelection().anchorNode).parents('#abwaSidebarWrapper').toArray().length === 0) {
-                this.openSidebar()
-              }
+      // Retrieve current user profile
+      this.currentUserProfile = window.abwa.groupSelector.user
+      this.loadAnnotations(() => {
+        this.initAnnotatorByAnnotation(() => {
+          // Check if something is selected after loading annotations and display sidebar
+          if (document.getSelection().toString().length !== 0) {
+            if ($(document.getSelection().anchorNode).parents('#abwaSidebarWrapper').toArray().length === 0) {
+              this.openSidebar()
             }
+          }
+          this.initAnnotationsObserver(() => {
             if (_.isFunction(callback)) {
               callback()
             }
@@ -303,7 +303,7 @@ class TextAnnotator extends ContentAnnotator {
         }
       }
     }, ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS * 1000)
-    // TODO Improve the way to highlight to avoid this interval
+    // TODO Improve the way to highlight to avoid this interval (when search in PDFs it is highlighted empty element instead of element)
     this.cleanInterval = setInterval(() => {
       let highlightedElements = document.querySelectorAll('.highlightedAnnotation')
       highlightedElements.forEach((element) => {
@@ -427,8 +427,18 @@ class TextAnnotator extends ContentAnnotator {
     let tagList = window.abwa.tagManager.getTagsList()
     let tagForAnnotation = TagManager.retrieveTagForAnnotation(annotation, tagList)
     try {
-      let highlightedElements = DOMTextUtils.highlightContent(
-        annotation.target[0].selector, classNameToHighlight, annotation.id)
+      let highlightedElements = []
+      // TODO Remove this case for google drive
+      if (window.location.href.includes('drive.google.com')) {
+        // Ensure popup exists
+        if (document.querySelector('.a-b-r-x')) {
+          highlightedElements = DOMTextUtils.highlightContent(
+            annotation.target[0].selector, classNameToHighlight, annotation.id, {}, false)
+        }
+      } else {
+        highlightedElements = DOMTextUtils.highlightContent(
+          annotation.target[0].selector, classNameToHighlight, annotation.id)
+      }
       // Highlight in same color as button
       highlightedElements.forEach(highlightedElement => {
         // If need to highlight, set the color corresponding to, in other case, maintain its original color
@@ -445,6 +455,7 @@ class TextAnnotator extends ContentAnnotator {
       this.createNextAnnotationHandler(annotation)
     } catch (e) {
       // TODO Handle error (maybe send in callback the error ¿?
+      callback(new Error('Element not found'))
     } finally {
       if (_.isFunction(callback)) {
         callback()
@@ -605,6 +616,8 @@ class TextAnnotator extends ContentAnnotator {
   destroy () {
     // Remove observer interval
     clearInterval(this.observerInterval)
+    // Clean interval
+    clearInterval(this.cleanInterval)
     // Remove reload interval
     clearInterval(this.reloadInterval)
     // Remove event listeners
