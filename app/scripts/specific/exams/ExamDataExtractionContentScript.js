@@ -9,6 +9,7 @@ const StudentsNavigationRing = require('./StudentsNavigationRing')
 const ValidateAnnotationManager = require('./ValidateAnnotationManager')
 const ReorderSpreadsheet = require('./ReorderSpreadsheet')
 const StudentLogging = require('./StudentLogging')
+const Screenshots = require('./Screenshots')
 const Config = require('../../Config')
 
 class ExamDataExtractionContentScript {
@@ -70,6 +71,8 @@ class ExamDataExtractionContentScript {
           }
         }
         // Enable screenshot functionality
+        window.abwa.specific.screenshots = new Screenshots()
+        window.abwa.specific.screenshots.init()
       }
     })
   }
@@ -118,6 +121,9 @@ class ExamDataExtractionContentScript {
         }
         if (window.abwa.specific.validateAnnotationManager) {
           window.abwa.specific.validateAnnotationManager.destroy()
+        }
+        if (window.abwa.specific.studentLogging) {
+          window.abwa.specific.studentLogging.destroy()
         }
       }
     } catch (e) {

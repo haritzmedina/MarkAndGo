@@ -22,8 +22,6 @@ class StudentsNavigationRing {
             let navigationRingWrapperUrl = chrome.extension.getURL('pages/specific/exam/navigationRing.html')
             $.get(navigationRingWrapperUrl, (html) => {
               $('#groupSelectorContainer').after($.parseHTML(html))
-              console.log(sheetData)
-              console.log(primaryStudyRow)
               let previousHyperlink = _.get(sheetData.data[0].rowData[primaryStudyRow - 1], 'values[0].hyperlink')
               let nextHyperlink = _.get(sheetData.data[0].rowData[primaryStudyRow + 1], 'values[0].hyperlink')
               let previousImageLink = chrome.extension.getURL('/images/arrowLeft.svg')

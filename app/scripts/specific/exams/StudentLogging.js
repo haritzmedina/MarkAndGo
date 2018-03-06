@@ -9,7 +9,7 @@ class StudentLogging {
   }
 
   init (callback) {
-    // TODO Check if user has a reviewed annotation already in the document
+    // Check if user has a reviewed annotation already in the document
     window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
       url: window.abwa.contentTypeManager.getDocumentURIToSearchInHypothesis(),
       tag: Config.exams.namespace + ':' + Config.exams.tags.statics.reviewed
@@ -66,6 +66,10 @@ class StudentLogging {
       text: '',
       uri: window.abwa.contentTypeManager.getDocumentURIToSearchInHypothesis() // Current url
     }
+  }
+
+  destroy () {
+    // Nothing to do yet
   }
 }
 
