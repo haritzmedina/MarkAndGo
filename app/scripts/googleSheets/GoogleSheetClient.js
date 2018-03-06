@@ -116,7 +116,7 @@ class GoogleSheetClient {
     data.numberOfRows = _.isNumber(data.numberOfRows) ? data.numberOfRows : 1
     let userEnteredValue = null
     if (_.isString(data.link)) {
-      let formulaValue = '=HYPERLINK("' + data.link + '"; "' + data.value + '")'
+      let formulaValue = '=HYPERLINK("' + data.link + '"; "' + data.value.replace(/"/g, '""') + '")'
       if (!_.isNaN(_.toNumber(data.value))) { // If is a number, change
         formulaValue = '=HYPERLINK("' + data.link + '"; ' + _.toNumber(data.value) + ')'
       }
