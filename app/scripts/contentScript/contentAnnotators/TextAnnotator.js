@@ -54,14 +54,34 @@ class TextAnnotator extends ContentAnnotator {
       this.initAnnotateEvent(() => {
         this.initModeChangeEvent(() => {
           this.initUserFilterChangeEvent(() => {
-            this.initReloadAnnotationsEvent() // Reload annotations periodically
-            if (_.isFunction(callback)) {
-              callback()
-            }
+            this.initReloadAnnotationsEvent(() => {
+              this.initDocumentURLChangeEvent(() => {
+                // Reload annotations periodically
+                if (_.isFunction(callback)) {
+                  callback()
+                }
+              })
+            })
           })
         })
       })
     })
+  }
+
+  initDocumentURLChangeEvent (callback) {
+    this.events.documentURLChangeEvent = {element: document, event: Events.updatedDocumentURL, handler: this.createDocumentURLChangeEventHandler()}
+    this.events.documentURLChangeEvent.element.addEventListener(this.events.documentURLChangeEvent.event, this.events.documentURLChangeEvent.handler, false)
+    if (_.isFunction(callback)) {
+      callback()
+    }
+  }
+
+  createDocumentURLChangeEventHandler (callback) {
+    return () => {
+      this.loadAnnotations(() => {
+        console.debug('annotations updated')
+      })
+    }
   }
 
   initUserFilterChangeEvent (callback) {
@@ -72,12 +92,15 @@ class TextAnnotator extends ContentAnnotator {
     }
   }
 
-  initReloadAnnotationsEvent () {
+  initReloadAnnotationsEvent (callback) {
     this.reloadInterval = setInterval(() => {
       this.updateAllAnnotations(() => {
         console.debug('annotations updated')
       })
     }, ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS * 1000)
+    if (_.isFunction(callback)) {
+      callback()
+    }
   }
 
   createUserFilterChangeEventHandler () {
