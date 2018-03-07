@@ -46,17 +46,12 @@ class DOMTextUtils {
    * @param className
    * @param id
    * @param data
-   * @param exhaustive
+   * @param exhaustive Runs all the algorithms until annotation match is found. For intensive CPU webpages maybe you are interested in disable this option. When disable, the last and more CPU use algorithm tryRetrieveRangeTextSelector is not executed
    * @returns {NodeList}
    * @throws TypeError
    */
   static highlightContent (selectors, className, id, data, exhaustive = true) {
-    let range
-    if (exhaustive) {
-      range = this.retrieveRange(selectors, true)
-    } else {
-      range = this.retrieveRange(selectors)
-    }
+    let range = this.retrieveRange(selectors, exhaustive)
     if (range) {
       let nodes = DOM.getLeafNodesInRange(range)
       if (nodes.length > 0) {
@@ -146,11 +141,11 @@ class DOMTextUtils {
       } else {
         let startRangeElement = null
         if (_.has(rangeSelector, 'startContainer')) {
-          startRangeElement = document.evaluate(rangeSelector.startContainer, document, null, window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+          startRangeElement = document.evaluate('.' + rangeSelector.startContainer, document, null, window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
         }
         let endRangeElement = null
         if (_.has(rangeSelector, 'endContainer')) {
-          endRangeElement = document.evaluate(rangeSelector.endContainer, document, null, window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+          endRangeElement = document.evaluate('.' + rangeSelector.endContainer, document, null, window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
         }
         if (_.isElement(startRangeElement) && _.isElement(endRangeElement)) {
           range = DOMTextUtils.tryRetrieveRangeTextSelector(fragmentElement, textQuoteSelector)
@@ -159,6 +154,11 @@ class DOMTextUtils {
           if (!range) {
             if (exhaustive) { // Try by hard exhaustive
               range = DOMTextUtils.tryRetrieveRangeTextSelector(document.body, textQuoteSelector)
+              if (!range) {
+                range = DOMTextUtils.retrieveRangeTextSelectorUsingNativeFind(textQuoteSelector.exact)
+              }
+            } else {
+              range = DOMTextUtils.retrieveRangeTextSelectorUsingNativeFind(textQuoteSelector.exact)
             }
           }
         }
@@ -184,8 +184,7 @@ class DOMTextUtils {
   }
 
   static tryRetrieveRangeTextSelector (fragmentElement, textQuoteSelector) {
-    // TODO Improve code prioritizing textposition instead of text quote. See issue https://github.com/haritzmedina/highlightAndGo/issues/6
-    if (fragmentElement === document) {
+    if (_.isNull(fragmentElement) || document.children[0] === fragmentElement) {
       return null
     }
     let range = null
@@ -194,7 +193,40 @@ class DOMTextUtils {
     } catch (e) {
       range = DOMTextUtils.tryRetrieveRangeTextSelector(fragmentElement.parentNode, textQuoteSelector)
     }
+    if (_.isNull(range)) {
+      range = DOMTextUtils.tryRetrieveRangeTextSelector(fragmentElement.parentNode, textQuoteSelector)
+    }
     return range
+  }
+
+  static retrieveRangeTextSelectorUsingNativeFind (exact) {
+    let n = 0
+    function findInPage (str) {
+      if (str === '') {
+        return false
+      }
+      // Find next occurance of the given string on the page, wrap around to the
+      // start of the page if necessary.
+      if (window.find) {
+        // Look for match starting at the current point. If not found, rewind
+        // back to the first match.
+        if (!window.find(str)) {
+          while (window.find(str, false, true)) {
+            n++
+          }
+        } else {
+          n++
+        }
+        // If not found in either direction, give message.
+        if (n === 0) {
+          // alert('Not found.')
+        }
+      }
+      if (window.getSelection()) {
+        return window.getSelection().getRangeAt(0)
+      }
+    }
+    return findInPage(exact)
   }
 
   static replaceContent (oldNode, newNode) {

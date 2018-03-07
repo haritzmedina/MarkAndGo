@@ -456,7 +456,7 @@ class TextAnnotator extends ContentAnnotator {
         // Ensure popup exists
         if (document.querySelector('.a-b-r-x')) {
           highlightedElements = DOMTextUtils.highlightContent(
-            annotation.target[0].selector, classNameToHighlight, annotation.id, {}, false)
+            annotation.target[0].selector, classNameToHighlight, annotation.id)
         }
       } else {
         highlightedElements = DOMTextUtils.highlightContent(
