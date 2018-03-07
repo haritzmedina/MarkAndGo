@@ -404,7 +404,10 @@ class TagManager {
         }
       }
     }
-    this.currentIndexTags = _.values(groupTags)
+    // Order code for each group
+    groupTags = _.map(groupTags, (tagGroup) => { tagGroup.tags = _.sortBy(tagGroup.tags, 'name'); return tagGroup })
+    // Order the groups
+    this.currentIndexTags = _.sortBy(groupTags, 'config.name')
     // Generate tag groups and buttons
     this.createIndexTagsButtons()
   }
@@ -420,7 +423,7 @@ class TagManager {
   }
 
   createIndexTagsButtons (callback) {
-    // If it is an array is not grouped
+    // If it is a non empty array, add buttons
     if (this.currentIndexTags.length > 0) {
       if (LanguageUtils.isInstanceOf(this.currentIndexTags[0], Tag)) {
         for (let i = 0; i < this.currentIndexTags.length; i++) {

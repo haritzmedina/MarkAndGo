@@ -63,7 +63,9 @@ class GroupSelector {
         // Retrieve last saved group
         ChromeStorage.getData(selectedGroupNamespace, ChromeStorage.local, (err, savedCurrentGroup) => {
           if (err) {
-            throw new Error('Unable to retrieve current selected group')
+            if (_.isFunction(callback)) {
+              callback(new Error('Unable to retrieve current selected group'))
+            }
           } else {
             // Parse chrome storage result
             if (!_.isEmpty(savedCurrentGroup) && savedCurrentGroup.data) {
@@ -71,9 +73,9 @@ class GroupSelector {
             } else {
               this.currentGroup = defaultGroup
             }
-          }
-          if (_.isFunction(callback)) {
-            callback()
+            if (_.isFunction(callback)) {
+              callback()
+            }
           }
         })
       } else {
