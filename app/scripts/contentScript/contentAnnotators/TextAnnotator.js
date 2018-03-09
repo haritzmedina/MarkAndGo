@@ -470,7 +470,15 @@ class TextAnnotator extends ContentAnnotator {
         highlightedElement.dataset.color = tagForAnnotation.color
         highlightedElement.dataset.tags = tagForAnnotation.tags
         let user = annotation.user.replace('acct:', '').replace('@hypothes.is', '')
-        highlightedElement.title = 'Author: ' + user + '\n' + 'Category: ' + tagForAnnotation.name
+        if (this.config.namespace === Config.exams.namespace) {
+          let tagGroup = _.find(window.abwa.tagManager.currentTags, (tagGroup) => { return _.find(tagGroup.tags, tagForAnnotation) })
+          let highestMark = _.last(tagGroup.tags).name
+          highlightedElement.title = 'Mark: ' + tagForAnnotation.name + ' of ' + highestMark
+        } else if (this.config.namespace === Config.slrDataExtraction.namespace) {
+          highlightedElement.title = 'Author: ' + user + '\n' + 'Category: ' + tagForAnnotation.name
+        } else {
+          highlightedElement.title = 'Author: ' + user + '\n'
+        }
       })
       // Create context menu event for highlighted elements
       this.createContextMenuForAnnotation(annotation)
