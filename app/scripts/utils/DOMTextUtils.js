@@ -155,10 +155,10 @@ class DOMTextUtils {
             if (exhaustive) { // Try by hard exhaustive
               range = DOMTextUtils.tryRetrieveRangeTextSelector(document.body, textQuoteSelector)
               if (!range) {
-                range = DOMTextUtils.retrieveRangeTextSelectorUsingNativeFind(textQuoteSelector.exact)
+                range = DOMTextUtils.retrieveRangeTextSelectorUsingNativeFind(textQuoteSelector.exact, textPositionSelector)
               }
             } else {
-              range = DOMTextUtils.retrieveRangeTextSelectorUsingNativeFind(textQuoteSelector.exact)
+              range = DOMTextUtils.retrieveRangeTextSelectorUsingNativeFind(textQuoteSelector.exact, textPositionSelector)
             }
           }
         }
@@ -199,34 +199,55 @@ class DOMTextUtils {
     return range
   }
 
-  static retrieveRangeTextSelectorUsingNativeFind (exact) {
-    let n = 0
-    function findInPage (str) {
-      if (str === '') {
-        return false
-      }
-      // Find next occurance of the given string on the page, wrap around to the
-      // start of the page if necessary.
-      if (window.find) {
-        // Look for match starting at the current point. If not found, rewind
-        // back to the first match.
-        if (!window.find(str)) {
-          while (window.find(str, false, true)) {
-            n++
-          }
-        } else {
-          n++
-        }
-        // If not found in either direction, give message.
-        if (n === 0) {
-          // alert('Not found.')
-        }
-      }
-      if (window.getSelection()) {
-        return window.getSelection().getRangeAt(0)
-      }
+  static findAllMatches (str) {
+    // Get current selection range for set again after the algorithm
+    let userSelection = window.getSelection().getRangeAt(0)
+    // Find matches using window.find
+    let matches = []
+    let findResult = document.execCommand('FindString', true, str)
+    let currentMatch = window.getSelection().getRangeAt(0).cloneRange()
+    // Search forward of the current position
+    while (findResult && _.isUndefined(_.find(matches, (match) => { return match.startOffset === currentMatch.startOffset || match.endOffset === currentMatch.endOffset }))) {
+      matches.push(window.getSelection().getRangeAt(0).cloneRange())
+      findResult = document.execCommand('FindString', true, str)
+      currentMatch = window.getSelection().getRangeAt(0).cloneRange()
     }
-    return findInPage(exact)
+    // Set current selection as the former one set by the user
+    window.getSelection().removeAllRanges()
+    window.getSelection().addRange(userSelection)
+    return _.uniq(matches)
+  }
+
+  static retrieveRangeTextSelectorUsingNativeFind (exact, textPositionSelector) {
+    let matches = DOMTextUtils.findAllMatches(exact)
+    if (matches.length === 0) {
+      return null
+    } else if (matches.length === 1) {
+      return matches[0]
+    } else if (matches.length > 1) {
+      // Try to find by position selector
+      let matchedTextPositionSelectors = _.map(matches, (match) => {
+        return DOMTextUtils.getTextPositionSelector(match)
+      })
+      let matchedRange = _.find(matchedTextPositionSelectors, (matchedSelector) => {
+        return matchedSelector.start === textPositionSelector.start && matchedSelector.end === textPositionSelector.end
+      })
+      if (matchedRange) {
+        return matchedRange
+      } else {
+        let range = domAnchorTextPosition.toRange(document.body, textPositionSelector.start, textPositionSelector.end)
+        matchedRange = _.find(matches, (matchRange) => {
+          return range.startOffset === matchRange.startOffset && range.endOffset === matchRange.endOffset
+        })
+        if (matchedRange) {
+          return matchedRange
+        } else {
+          return matches[0] // Return the first match
+        }
+      }
+    } else {
+      return null
+    }
   }
 
   static replaceContent (oldNode, newNode) {
