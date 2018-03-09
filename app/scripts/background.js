@@ -74,11 +74,16 @@ class Background {
           }
           sendResponse(true)
         } else if (request.cmd === 'activatePopup') {
-          console.log(this.tabs)
           if (!_.isEmpty(this.tabs) && !_.isEmpty(this.tabs[sender.tab.id])) {
             this.tabs[sender.tab.id].activate()
           }
           sendResponse(true)
+        } else if (request.cmd === 'amIActivated') {
+          if (this.tabs[sender.tab.id].activated) {
+            sendResponse({activated: true})
+          } else {
+            sendResponse({activated: false})
+          }
         }
       }
     })
