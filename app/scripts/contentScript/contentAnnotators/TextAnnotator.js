@@ -473,7 +473,7 @@ class TextAnnotator extends ContentAnnotator {
         if (this.config.namespace === Config.exams.namespace) {
           let tagGroup = _.find(window.abwa.tagManager.currentTags, (tagGroup) => { return _.find(tagGroup.tags, tagForAnnotation) })
           let highestMark = _.last(tagGroup.tags).name
-          highlightedElement.title = 'Mark: ' + tagForAnnotation.name + ' of ' + highestMark
+          highlightedElement.title = 'Rubric: ' + tagGroup.config.name + '\nMark: ' + tagForAnnotation.name + ' of ' + highestMark
         } else if (this.config.namespace === Config.slrDataExtraction.namespace) {
           highlightedElement.title = 'Author: ' + user + '\n' + 'Category: ' + tagForAnnotation.name
         } else {
