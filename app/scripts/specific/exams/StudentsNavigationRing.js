@@ -55,7 +55,10 @@ class StudentsNavigationRing {
   }
 
   destroy (callback) {
-
+    $('#studentNavigationRing').remove()
+    if (_.isFunction(callback)) {
+      callback()
+    }
   }
 }
 

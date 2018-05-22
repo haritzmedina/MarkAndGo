@@ -125,6 +125,12 @@ class ExamDataExtractionContentScript {
         if (window.abwa.specific.studentLogging) {
           window.abwa.specific.studentLogging.destroy()
         }
+        if (window.abwa.specific.screenshots) {
+          window.abwa.specific.screenshots.destroy()
+        }
+        if (window.abwa.specific.navigationRing) {
+          window.abwa.specific.navigationRing.destroy()
+        }
       }
     } catch (e) {
       // TODO Show user need to reload the page?

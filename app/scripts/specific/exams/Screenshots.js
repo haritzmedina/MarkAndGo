@@ -1,6 +1,7 @@
 const html2canvas = require('html2canvas')
 const FileSaver = require('file-saver')
 const $ = require('jquery')
+const _ = require('lodash')
 
 class Screenshots {
   constructor () {
@@ -51,6 +52,13 @@ class Screenshots {
         FileSaver.saveAs(blob, 'exam.png')
       })
     })
+  }
+
+  destroy (callback) {
+    $('#screenshots').remove()
+    if (_.isFunction(callback)) {
+      callback()
+    }
   }
 }
 
