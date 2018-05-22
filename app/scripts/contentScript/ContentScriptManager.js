@@ -174,11 +174,7 @@ class ContentScriptManager {
   reloadSpecificContentManager (config, callback) {
     // Destroy current specific content manager
     this.destroySpecificContentManager()
-    if (config.namespace === 'slr') {
-      const SLRDataExtractionContentScript = require('../specific/slrDataExtraction/SLRDataExtractionContentScript')
-      window.abwa.specificContentManager = new SLRDataExtractionContentScript(config)
-      window.abwa.specificContentManager.init()
-    } else if (config.namespace === 'exam') {
+    if (config.namespace === 'exam') {
       const ExamDataExtractionContentScript = require('../specific/exams/ExamDataExtractionContentScript')
       window.abwa.specificContentManager = new ExamDataExtractionContentScript(config)
       window.abwa.specificContentManager.init()

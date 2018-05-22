@@ -58,9 +58,7 @@
     "tabs",
     "webRequest",
     "webRequestBlocking",
-    "*://doi.org/*",
-    "*://dx.doi.org/*",
-    "*://www.sciencedirect.com/science/article/pii/*"
+    "*://www.dropbox.com/s/"
   ],
   "oauth2": {
     "client_id": "1008657588862-r84qhkr8ggt9s36b4m8tr2uhg429o9on.apps.googleusercontent.com",
