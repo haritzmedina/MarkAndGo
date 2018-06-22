@@ -10,6 +10,7 @@ const Config = {
   slrDataExtraction: {
     contentAnnotator: 'text', // Type of content annotator
     namespace: 'slr', // Namespace for the annotations
+    urlParamName: 'hag', // Name to activate the extension if the url contains this hash param
     sidebar: {},
     location: true, // Location mode
     userFilter: true,
@@ -30,6 +31,7 @@ const Config = {
   exams: {
     contentAnnotator: 'text',
     namespace: 'exam',
+    urlParamName: 'mag',
     sidebar: {},
     location: true,
     pattern: '',

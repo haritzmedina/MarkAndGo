@@ -524,12 +524,12 @@ class CommonHypersheetManager {
 
   static getAnnotationUrl (annotation, primaryStudyURL) {
     if (primaryStudyURL) {
-      return primaryStudyURL + '#hag:' + annotation.id
+      return primaryStudyURL + '#' + Config.exams.urlParamName + ':' + annotation.id
     } else {
       if (window.abwa.contentTypeManager.doi) {
-        return 'https://doi.org/' + window.abwa.contentTypeManager.doi + '#hag:' + annotation.id
+        return 'https://doi.org/' + window.abwa.contentTypeManager.doi + '#' + Config.exams.urlParamName + ':' + annotation.id
       } else {
-        return annotation.uri + '#hag:' + annotation.id
+        return annotation.uri + '#' + Config.exams.urlParamName + ':' + annotation.id
       }
     }
   }
