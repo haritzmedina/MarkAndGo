@@ -2,6 +2,7 @@ const _ = require('lodash')
 const $ = require('jquery')
 const jsYaml = require('js-yaml')
 const ModeManager = require('./ModeManager')
+const RolesManager = require('./RolesManager')
 const LanguageUtils = require('../utils/LanguageUtils')
 const ColorUtils = require('../utils/ColorUtils')
 const Events = require('./Events')
@@ -96,10 +97,11 @@ class TagManager {
     this.initTagsStructure(() => {
       this.initEventHandlers(() => {
         this.initAllTags(() => {
-          if (window.abwa.modeManager.mode === ModeManager.modes.highlight) {
-            this.showAllTagsContainer()
+          // Depending on the role it is shown viewing annotations or not
+          if (window.abwa.roleManager.role === RolesManager.roles.student) {
+            this.showViewingTagsContainer()
           } else {
-            this.showIndexTagsContainer()
+            this.showEvidencingTagsContainer()
           }
           if (_.isFunction(callback)) {
             callback()
@@ -137,7 +139,7 @@ class TagManager {
     let tagWrapperUrl = chrome.extension.getURL('pages/sidebar/tagWrapper.html')
     $.get(tagWrapperUrl, (html) => {
       $('#abwaSidebarContainer').append($.parseHTML(html))
-      this.tagsContainer = {annotate: document.querySelector('#tagsAnnotate'), index: document.querySelector('#tagsIndex')}
+      this.tagsContainer = {evidencing: document.querySelector('#tagsEvidencing'), marking: document.querySelector('#tagsIndex'), viewing: document.querySelector('#tagsViewing')}
       if (this.model.namespace === 'exam') {
         // Hide the content of the tags sidebar until they are ordered
         this.tagsContainer.annotate.dataset.examHidden = 'true'
@@ -413,6 +415,7 @@ class TagManager {
   }
 
   modeChangeHandler (event) {
+    debugger
     if (event.detail.mode === ModeManager.modes.highlight) {
       // Show all the tags
       this.showAllTagsContainer()
@@ -430,13 +433,13 @@ class TagManager {
           // Append each element
           let tagButton = this.currentIndexTags[i].createButton()
           tagButton.setAttribute('role', Tag.roles.index) // Set index rol to tag
-          this.tagsContainer.index.append(tagButton)
+          this.tagsContainer.viewing.append(tagButton)
         }
       } else if (LanguageUtils.isInstanceOf(this.currentIndexTags[0], TagGroup)) {
         for (let i = 0; i < this.currentIndexTags.length; i++) {
           let tagGroupElement = this.currentIndexTags[i].createPanel(true) // Index tag buttons panel
           if (tagGroupElement) {
-            this.tagsContainer.index.append(tagGroupElement)
+            this.tagsContainer.viewing.append(tagGroupElement)
           }
         }
       }
@@ -465,13 +468,26 @@ class TagManager {
   }
 
   showAllTagsContainer () {
-    $(this.tagsContainer.index).attr('aria-hidden', 'true')
+    $(this.tagsContainer.viewing).attr('aria-hidden', 'true')
     $(this.tagsContainer.annotate).attr('aria-hidden', 'false')
   }
 
-  showIndexTagsContainer () {
-    $(this.tagsContainer.index).attr('aria-hidden', 'false')
-    $(this.tagsContainer.annotate).attr('aria-hidden', 'true')
+  showEvidencingTagsContainer () {
+    $(this.tagsContainer.viewing).attr('aria-hidden', 'true')
+    $(this.tagsContainer.marking).attr('aria-hidden', 'true')
+    $(this.tagsContainer.evidencing).attr('aria-hidden', 'false')
+  }
+
+  showMarkingTagsContainer () {
+    $(this.tagsContainer.viewing).attr('aria-hidden', 'true')
+    $(this.tagsContainer.marking).attr('aria-hidden', 'false')
+    $(this.tagsContainer.evidencing).attr('aria-hidden', 'true')
+  }
+
+  showViewingTagsContainer () {
+    $(this.tagsContainer.viewing).attr('aria-hidden', 'false')
+    $(this.tagsContainer.marking).attr('aria-hidden', 'true')
+    $(this.tagsContainer.evidencing).attr('aria-hidden', 'true')
   }
 }
 

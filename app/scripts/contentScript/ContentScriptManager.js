@@ -11,6 +11,7 @@ const AugmentationManager = require('./AugmentationManager')
 const UserFilter = require('./UserFilter')
 const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
 const TextAnnotator = require('./contentAnnotators/TextAnnotator')
+const RolesManager = require('./RolesManager')
 
 class ContentScriptManager {
   constructor () {
@@ -30,14 +31,17 @@ class ContentScriptManager {
           window.abwa.annotationBasedInitializer.init(() => {
             window.abwa.groupSelector = new GroupSelector()
             window.abwa.groupSelector.init(() => {
-              window.abwa.modeManager = new ModeManager()
-              window.abwa.modeManager.init(() => {
-                // Reload for first time the content by group
-                this.reloadContentByGroup()
-                // Initialize listener for group change to reload the content
-                this.initListenerForGroupChange()
-                this.status = ContentScriptManager.status.initialized
-                console.log('Initialized content script manager')
+              window.abwa.roleManager = new RolesManager()
+              window.abwa.roleManager.init(() => {
+                window.abwa.modeManager = new ModeManager()
+                window.abwa.modeManager.init(() => {
+                  // Reload for first time the content by group
+                  this.reloadContentByGroup()
+                  // Initialize listener for group change to reload the content
+                  this.initListenerForGroupChange()
+                  this.status = ContentScriptManager.status.initialized
+                  console.log('Initialized content script manager')
+                })
               })
             })
           })
@@ -63,6 +67,7 @@ class ContentScriptManager {
       if (_.isEmpty(config)) {
         // TODO Inform user no defined configuration found
         console.debug('No supported configuration found for this group')
+        this.destroyRolesManager()
         this.destroyAugmentationOperations()
         this.destroyTagsManager()
         this.destroyUserFilter()
@@ -70,16 +75,18 @@ class ContentScriptManager {
         this.destroySpecificContentManager()
       } else {
         console.debug('Loaded supported configuration %s', config.namespace)
-        // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
-        this.reloadTagsManager(config, () => {
-          this.reloadContentAnnotator(config, () => {
-            if (config.userFilter) {
-              this.reloadUserFilter(config, () => {
+        this.reloadRolesManager(config, () => {
+          // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
+          this.reloadTagsManager(config, () => {
+            this.reloadContentAnnotator(config, () => {
+              if (config.userFilter) {
+                this.reloadUserFilter(config, () => {
+                  this.reloadSpecificContentManager(config)
+                })
+              } else {
                 this.reloadSpecificContentManager(config)
-              })
-            } else {
-              this.reloadSpecificContentManager(config)
-            }
+              }
+            })
           })
         })
         this.reloadAugmentationOperations(config)
@@ -112,7 +119,21 @@ class ContentScriptManager {
     this.destroyAugmentationOperations()
     // Create augmentation operations for the current group
     window.abwa.augmentationManager = new AugmentationManager(config)
-    window.abwa.augmentationManager.init()
+    window.abwa.augmentationManager.init(callback)
+  }
+
+  reloadRolesManager (config, callback) {
+    // Destroy current role manager
+    this.destroyRolesManager()
+    // Create a role manager for the current group
+    window.abwa.roleManager = new RolesManager()
+    window.abwa.roleManager.init()
+  }
+
+  destroyRolesManager (callback) {
+    if (!_.isEmpty(window.abwa.roleManager)) {
+      window.abwa.roleManager.destroy()
+    }
   }
 
   destroyContentAnnotator () {

@@ -36,8 +36,8 @@
     "description": "Sidebar highlight label"
   },
   "Index": {
-    "message": "Review",
-    "description": "Sidebar index label"
+    "message": "Evidencing",
+    "description": "Sidebar evidence annotation"
   },
   "Dimensions": {
     "message": "Criteria",

@@ -3,6 +3,8 @@ const _ = require('lodash')
 const LanguageUtils = require('../utils/LanguageUtils')
 const Events = require('./Events')
 
+const RolesManager = require('./RolesManager')
+
 class ModeManager {
   constructor (mode) {
     if (mode) {
@@ -11,11 +13,11 @@ class ModeManager {
       // If initialization based on annotation
       if (window.abwa.annotationBasedInitializer.initAnnotation) {
         // Set index mode
-        this.mode = ModeManager.modes.index
+        this.mode = ModeManager.modes.view
         // Open sidebar
         window.abwa.sidebar.openSidebar()
       } else {
-        this.mode = ModeManager.modes.highlight
+        this.mode = ModeManager.modes.evidencing
       }
     }
   }
@@ -31,18 +33,24 @@ class ModeManager {
   }
 
   loadSidebarToggle (callback) {
-    let sidebarURL = chrome.extension.getURL('pages/sidebar/annotatorMode.html')
-    $.get(sidebarURL, (html) => {
-      // Append sidebar to content
-      $('#abwaSidebarContainer').append($.parseHTML(html))
-      // Set toggle status
-      this.setToggleStatus()
-      // Set tags text
-      this.setPanelText()
+    if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
+      let sidebarURL = chrome.extension.getURL('pages/sidebar/annotatorMode.html')
+      $.get(sidebarURL, (html) => {
+        // Append sidebar to content
+        $('#abwaSidebarContainer').append($.parseHTML(html))
+        // Set toggle status
+        this.setToggleStatus()
+        // Set tags text
+        this.setPanelText()
+        if (_.isFunction(callback)) {
+          callback()
+        }
+      })
+    } else {
       if (_.isFunction(callback)) {
         callback()
       }
-    })
+    }
   }
 
   setToggleStatus () {
@@ -113,8 +121,9 @@ class ModeManager {
 }
 
 ModeManager.modes = {
-  'highlight': 'highlight',
-  'index': 'index'
+  'mark': 'mark',
+  'evidencing': 'evidencing',
+  'view': 'view'
 }
 
 module.exports = ModeManager
