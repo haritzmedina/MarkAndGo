@@ -139,7 +139,7 @@ class GoogleSheetParser {
         }
       } else {
         swal('Oops!', // TODO i18n
-          'The spreadsheet hasn\'t the correct structure, "author" column is missing.',
+          'The spreadsheet hasn\'t the correct structure, "Total" column is missing.',
           'error') // Notify error to user
         return new Error('No author found')
       }
