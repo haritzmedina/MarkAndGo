@@ -9,55 +9,53 @@ class ModeManager {
   constructor (mode) {
     if (mode) {
       this.mode = mode
-    } else {
-      // If initialization based on annotation
+    }
+  }
+
+  init (callback) {
+    if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
       if (window.abwa.annotationBasedInitializer.initAnnotation) {
-        // Set index mode
-        this.mode = ModeManager.modes.view
+        this.mode = ModeManager.modes.mark
         // Open sidebar
         window.abwa.sidebar.openSidebar()
       } else {
         this.mode = ModeManager.modes.evidencing
       }
-    }
-  }
-
-  init (callback) {
-    this.loadSidebarToggle(() => {
-      this.initEventHandlers(() => {
-        if (_.isFunction(callback)) {
-          callback()
-        }
-      })
-    })
-  }
-
-  loadSidebarToggle (callback) {
-    if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
-      let sidebarURL = chrome.extension.getURL('pages/sidebar/annotatorMode.html')
-      $.get(sidebarURL, (html) => {
-        // Append sidebar to content
-        $('#abwaSidebarContainer').append($.parseHTML(html))
-        // Set toggle status
-        this.setToggleStatus()
-        // Set tags text
-        this.setPanelText()
-        if (_.isFunction(callback)) {
-          callback()
-        }
+      this.loadSidebarToggle(() => {
+        this.initEventHandlers(() => {
+          if (_.isFunction(callback)) {
+            callback()
+          }
+        })
       })
     } else {
+      this.mode = ModeManager.modes.view
       if (_.isFunction(callback)) {
         callback()
       }
     }
   }
 
+  loadSidebarToggle (callback) {
+    let sidebarURL = chrome.extension.getURL('pages/sidebar/annotatorMode.html')
+    $.get(sidebarURL, (html) => {
+      // Append sidebar to content
+      $('#abwaSidebarContainer').append($.parseHTML(html))
+      // Set toggle status
+      this.setToggleStatus()
+      // Set tags text
+      this.setPanelText()
+      if (_.isFunction(callback)) {
+        callback()
+      }
+    })
+  }
+
   setToggleStatus () {
-    if (this.mode === ModeManager.modes.highlight) {
-      this.setHighlightMode()
+    if (this.mode === ModeManager.modes.evidencing) {
+      this.setEvidencingMode()
     } else {
-      this.setIndexMode()
+      this.setMarkingMode()
     }
   }
 
@@ -66,57 +64,46 @@ class ModeManager {
     let modeHeaderLabel = document.querySelector('#modeHeader label')
     modeHeaderLabel.innerText = chrome.i18n.getMessage('Mode')
     let modeLabel = document.querySelector('#modeLabel')
-    if (this.mode === ModeManager.modes.highlight) {
-      modeLabel.innerText = chrome.i18n.getMessage('highlight')
+    if (this.mode === ModeManager.modes.evidencing) {
+      modeLabel.innerText = chrome.i18n.getMessage('Evidencing')
     } else {
-      modeLabel.innerText = chrome.i18n.getMessage('index')
+      modeLabel.innerText = chrome.i18n.getMessage('Marking')
     }
   }
 
-  setHighlightMode () {
-    let annotatorToggle = document.querySelector('#annotatorToggle')
-    let modeLabel = document.querySelector('#modeLabel')
-    annotatorToggle.checked = true
-    modeLabel.innerText = chrome.i18n.getMessage('highlight')
-    this.mode = ModeManager.modes.highlight
-  }
-
-  setIndexMode () {
+  setEvidencingMode () {
     let annotatorToggle = document.querySelector('#annotatorToggle')
     let modeLabel = document.querySelector('#modeLabel')
     annotatorToggle.checked = false
-    modeLabel.innerText = chrome.i18n.getMessage('index')
-    this.mode = ModeManager.modes.index
+    modeLabel.innerText = chrome.i18n.getMessage('Evidencing')
+    this.mode = ModeManager.modes.evidencing
+  }
+
+  setMarkingMode () {
+    let annotatorToggle = document.querySelector('#annotatorToggle')
+    let modeLabel = document.querySelector('#modeLabel')
+    annotatorToggle.checked = true
+    modeLabel.innerText = chrome.i18n.getMessage('Marking')
+    this.mode = ModeManager.modes.mark
+  }
+
+  setViewingMode () {
+    this.mode = ModeManager.modes.view
   }
 
   initEventHandlers (callback) {
     let annotatorToggle = document.querySelector('#annotatorToggle')
     annotatorToggle.addEventListener('click', (event) => {
       if (annotatorToggle.checked) {
-        this.setHighlightMode()
+        this.setMarkingMode()
       } else {
-        this.setIndexMode()
+        this.setEvidencingMode()
       }
       LanguageUtils.dispatchCustomEvent(Events.modeChanged, {mode: this.mode})
     })
     if (_.isFunction(callback)) {
       callback()
     }
-  }
-
-  programmaticallyChangeToIndexMode () {
-    this.setIndexMode()
-    LanguageUtils.dispatchCustomEvent(Events.modeChanged, {mode: this.mode})
-  }
-
-  programmaticallyDisableModeSelector () {
-    let annotatorToggle = document.querySelector('#annotatorToggle')
-    annotatorToggle.disabled = true
-  }
-
-  programaticallyChangeToHighlightMode () {
-    this.setHighlightMode()
-    LanguageUtils.dispatchCustomEvent(Events.modeChanged, {mode: this.mode})
   }
 }
 

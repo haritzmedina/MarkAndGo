@@ -27,7 +27,8 @@ class CreateAnnotationManager {
   createAnnotationCreateEventHandler () {
     return (event) => {
       // Add to google sheet the current annotation
-      this.addClassificationToHypersheet(event.detail.annotation, (err) => {
+      debugger
+      /*this.addClassificationToHypersheet(event.detail.annotation, (err) => {
         if (err) {
           // TODO Show user an error number
           console.error(err)
@@ -40,7 +41,7 @@ class CreateAnnotationManager {
           // Nothing to do
           console.debug('Correctly updated google sheet with created annotation')
         }
-      })
+      })*/
     }
   }
 

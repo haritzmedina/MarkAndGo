@@ -141,8 +141,8 @@ class TextAnnotator extends ContentAnnotator {
 
   createInitModeChangeEventHandler () {
     return () => {
-      // If mode is index, disable selection event
-      if (window.abwa.modeManager.mode === ModeManager.modes.index) {
+      // If is mark or view disable the sidebar closing
+      if (window.abwa.modeManager.mode === ModeManager.modes.mark || window.abwa.modeManager.mode === ModeManager.modes.view) {
         // Highlight all annotations
         this.currentAnnotations = this.allAnnotations
         LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
@@ -373,16 +373,12 @@ class TextAnnotator extends ContentAnnotator {
         }
       } else {
         // Search tagged annotations
-        let tagList = window.abwa.tagManager.getTagsList()
-        let taggedAnnotations = []
-        for (let i = 0; i < annotations.length; i++) {
-          // Check if annotation contains a tag of current group
-          let tag = TagManager.retrieveTagForAnnotation(annotations[i], tagList)
-          if (tag) {
-            taggedAnnotations.push(annotations[i])
-          }
-        }
-        this.allAnnotations = taggedAnnotations || []
+        let filteringTags = window.abwa.tagManager.getFilteringTagList()
+        let filteredAnnotations = _.filter(annotations, (annotation) => {
+          let tags = annotation.tags
+          return !(tags.length > 0 && _.find(filteringTags, tags[0])) || (tags.length > 1 && _.find(filteringTags, tags[1]))
+        })
+        this.allAnnotations = filteredAnnotations
         LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
         if (_.isFunction(callback)) {
           callback(null, this.allAnnotations)
@@ -391,44 +387,8 @@ class TextAnnotator extends ContentAnnotator {
     })
   }
 
-  getAllAnnotations (callback) {
-    // Retrieve annotations for current url and group
-    window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-      url: window.abwa.contentTypeManager.getDocumentURIToSearchInHypothesis(),
-      uri: window.abwa.contentTypeManager.getDocumentURIToSaveInHypothesis(),
-      group: window.abwa.groupSelector.currentGroup.id,
-      order: 'asc'
-    }, (err, annotations) => {
-      if (err) {
-        if (_.isFunction(callback)) {
-          callback(err)
-        }
-      } else {
-        // Search tagged annotations
-        let tagList = window.abwa.tagManager.getTagsList()
-        let taggedAnnotations = []
-        for (let i = 0; i < annotations.length; i++) {
-          // Check if annotation contains a tag of current group
-          let tag = TagManager.retrieveTagForAnnotation(annotations[i], tagList)
-          if (tag) {
-            taggedAnnotations.push(annotations[i])
-          }
-        }
-        if (_.isFunction(callback)) {
-          callback(null, taggedAnnotations)
-        }
-      }
-    })
-  }
-
   retrieveCurrentAnnotations () {
-    // Depending on the mode of the tool, we must need only
-    if (window.abwa.modeManager.mode === ModeManager.modes.index) {
-      return this.allAnnotations
-    } else if (window.abwa.modeManager.mode === ModeManager.modes.highlight) {
-      // Filter annotations which user is different to current one
-      return _.filter(this.allAnnotations, (annotation) => { return annotation.user === this.currentUserProfile.userid })
-    }
+    return this.allAnnotations
   }
 
   highlightAnnotations (annotations, callback) {
@@ -447,8 +407,9 @@ class TextAnnotator extends ContentAnnotator {
 
   highlightAnnotation (annotation, callback) {
     let classNameToHighlight = this.retrieveHighlightClassName(annotation)
-    let tagList = window.abwa.tagManager.getTagsList()
-    let tagForAnnotation = TagManager.retrieveTagForAnnotation(annotation, tagList)
+    // Get annotation color for an annotation
+    let tagInstance = window.abwa.tagManager.findAnnotationTagInstance(annotation)
+    let color = tagInstance.getColor()
     try {
       let highlightedElements = []
       // TODO Remove this case for google drive
@@ -465,27 +426,18 @@ class TextAnnotator extends ContentAnnotator {
       // Highlight in same color as button
       highlightedElements.forEach(highlightedElement => {
         // If need to highlight, set the color corresponding to, in other case, maintain its original color
-        $(highlightedElement).css('background-color', tagForAnnotation.color)
+        $(highlightedElement).css('background-color', color)
         // Set purpose color
-        highlightedElement.dataset.color = tagForAnnotation.color
-        highlightedElement.dataset.tags = tagForAnnotation.tags
-        let user = annotation.user.replace('acct:', '').replace('@hypothes.is', '')
-        if (this.config.namespace === Config.exams.namespace) {
-          let tagGroup = _.find(window.abwa.tagManager.currentTags, (tagGroup) => { return _.find(tagGroup.tags, tagForAnnotation) })
-          let highestMark = _.last(tagGroup.tags).name
-          highlightedElement.title = 'Rubric: ' + tagGroup.config.name + '\nMark: ' + tagForAnnotation.name + ' of ' + highestMark
-        } else if (this.config.namespace === Config.slrDataExtraction.namespace) {
-          highlightedElement.title = 'Author: ' + user + '\n' + 'Category: ' + tagForAnnotation.name
-        } else {
-          highlightedElement.title = 'Author: ' + user + '\n'
-        }
+        highlightedElement.dataset.color = color
+        let highestMark = _.last(tagInstance.group.tags).name
+        highlightedElement.title = 'Rubric competence: ' + tagInstance.group.config.name + '\nMark: ' + tagInstance.name + ' of ' + highestMark
       })
       // Create context menu event for highlighted elements
       this.createContextMenuForAnnotation(annotation)
       // Create click event to move to next annotation
       this.createNextAnnotationHandler(annotation)
     } catch (e) {
-      // TODO Handle error (maybe send in callback the error ¿?
+      // TODO Handle error (maybe send in callback the error ¿?)
       callback(new Error('Element not found'))
     } finally {
       if (_.isFunction(callback)) {

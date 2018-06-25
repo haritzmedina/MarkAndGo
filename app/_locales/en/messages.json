@@ -31,11 +31,11 @@
     "message": "Mode",
     "description": "Sidebar mode header"
   },
-  "Highlight": {
-    "message": "Mark",
+  "Marking": {
+    "message": "Marking",
     "description": "Sidebar highlight label"
   },
-  "Index": {
+  "Evidencing": {
     "message": "Evidencing",
     "description": "Sidebar evidence annotation"
   },

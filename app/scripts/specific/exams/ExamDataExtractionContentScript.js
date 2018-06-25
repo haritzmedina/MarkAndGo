@@ -26,7 +26,7 @@ class ExamDataExtractionContentScript {
           callback(err)
         }
       } else {
-        if (isTeacher) { // Load posibility to updated the spreadsheet
+        if (isTeacher) { // Load possibility to updated the spreadsheet
           window.abwa.specific = window.abwa.specific || {}
           // Retrieve mapping study manager
           window.abwa.specific.mappingStudyManager = new MappingStudyManager()
@@ -59,9 +59,6 @@ class ExamDataExtractionContentScript {
             })
           })
         } else { // Change to checker mode
-          window.abwa.modeManager.programmaticallyChangeToIndexMode()
-          window.abwa.modeManager.programmaticallyDisableModeSelector()
-          window.abwa.sidebar.openSidebar()
           window.abwa.specific = window.abwa.specific || {}
           // Log student reviewed the exam
           window.abwa.specific.studentLogging = new StudentLogging()
