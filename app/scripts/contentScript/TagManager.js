@@ -49,11 +49,6 @@ class Tag {
   }
 }
 
-Tag.roles = {
-  annotation: 'annotation',
-  index: 'index'
-}
-
 class TagGroup {
   constructor (config, tags) {
     this.config = config
@@ -140,10 +135,6 @@ class TagManager {
     $.get(tagWrapperUrl, (html) => {
       $('#abwaSidebarContainer').append($.parseHTML(html))
       this.tagsContainer = {evidencing: document.querySelector('#tagsEvidencing'), marking: document.querySelector('#tagsIndex'), viewing: document.querySelector('#tagsViewing')}
-      if (this.model.namespace === 'exam') {
-        // Hide the content of the tags sidebar until they are ordered
-        this.tagsContainer.annotate.dataset.examHidden = 'true'
-      }
       if (_.isFunction(callback)) {
         callback()
       }
@@ -184,13 +175,12 @@ class TagManager {
     this.getGroupAnnotations((annotations) => {
       // Add to model
       this.model.groupAnnotations = annotations
-      // If annotations are grouped
-      if (!_.isEmpty(this.model.config.grouped)) {
-        this.currentTags = this.createTagsBasedOnAnnotationsGrouped(annotations, this.model.config.grouped)
-      } else {
-        // Create tags based on annotations
-        this.currentTags = this.createTagsBasedOnAnnotations(annotations)
-      }
+      // Create tags based on annotations
+      this.currentTags = this.createTagsBasedOnAnnotations()
+      // Populate tags containers for the modes
+      this.createTagsButtonsForEvidence()
+      this.createTagsButtonsForMark()
+
       this.createTagButtons()
       if (_.isFunction(callback)) {
         callback()
@@ -211,17 +201,6 @@ class TagManager {
   }
 
   createTagsBasedOnAnnotations () {
-    let tags = []
-    for (let i = 0; i < this.model.groupAnnotations.length; i++) {
-      let tagAnnotation = this.model.groupAnnotations[i]
-      let tagName = tagAnnotation.tags[0].substr(this.model.namespace.length + 1) // <namespace>:
-      tags.push(new Tag({name: tagName, namespace: this.model.namespace, options: jsYaml.load(tagAnnotation.text)}))
-    }
-    this.model.currentTags = tags
-    return tags
-  }
-
-  createTagsBasedOnAnnotationsGrouped () {
     let tagGroupsAnnotations = {}
     for (let i = 0; i < this.model.groupAnnotations.length; i++) {
       let groupTag = this.retrieveTagNameByPrefix(this.model.groupAnnotations[i].tags, (this.model.namespace + ':' + this.model.config.grouped.group))
@@ -465,11 +444,6 @@ class TagManager {
       }
     }
     return {group: group, subgroup: subGroup}
-  }
-
-  showAllTagsContainer () {
-    $(this.tagsContainer.viewing).attr('aria-hidden', 'true')
-    $(this.tagsContainer.annotate).attr('aria-hidden', 'false')
   }
 
   showEvidencingTagsContainer () {

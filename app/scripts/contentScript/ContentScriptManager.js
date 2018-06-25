@@ -126,8 +126,11 @@ class ContentScriptManager {
     // Destroy current role manager
     this.destroyRolesManager()
     // Create a role manager for the current group
-    window.abwa.roleManager = new RolesManager()
+    window.abwa.roleManager = new RolesManager(config)
     window.abwa.roleManager.init()
+    if (_.isFunction(callback)) {
+      callback()
+    }
   }
 
   destroyRolesManager (callback) {
