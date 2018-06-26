@@ -5,8 +5,8 @@ const PrimaryStudySheetManager = require('./PrimaryStudySheetManager')
 const MappingStudyManager = require('./MappingStudyManager')
 const CreateAnnotationManager = require('./CreateAnnotationManager')
 const DeleteAnnotationManager = require('./DeleteAnnotationManager')
+const MarkAnnotationManager = require('./MarkAnnotationManager')
 const StudentsNavigationRing = require('./StudentsNavigationRing')
-const ValidateAnnotationManager = require('./ValidateAnnotationManager')
 const ReorderSpreadsheet = require('./ReorderSpreadsheet')
 const StudentLogging = require('./StudentLogging')
 const Screenshots = require('./Screenshots')
@@ -46,12 +46,12 @@ class ExamDataExtractionContentScript {
                 // Create annotation handler
                 window.abwa.specific.createAnnotationManager = new CreateAnnotationManager()
                 window.abwa.specific.createAnnotationManager.init()
+                // Mark annotation handler
+                window.abwa.specific.markAnnotationManager = new MarkAnnotationManager()
+                window.abwa.specific.markAnnotationManager.init()
                 // Delete annotation handler
                 window.abwa.specific.deleteAnnotationManager = new DeleteAnnotationManager()
                 window.abwa.specific.deleteAnnotationManager.init()
-                // Validation handler
-                window.abwa.specific.validateAnnotationManager = new ValidateAnnotationManager()
-                window.abwa.specific.validateAnnotationManager.init()
                 if (_.isFunction(callback)) {
                   callback()
                 }
