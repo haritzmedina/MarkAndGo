@@ -17,11 +17,11 @@ class DeleteAnnotationManager {
 
   init (callback) {
     // Create event for annotation delete
-    this.events.annotationDeleted = {element: document, event: Events.annotationDeleted, handler: this.createAnnotationDeletedEventHandler()}
+    /* this.events.annotationDeleted = {element: document, event: Events.annotationDeleted, handler: this.createAnnotationDeletedEventHandler()}
     this.events.annotationDeleted.element.addEventListener(this.events.annotationDeleted.event, this.events.annotationDeleted.handler, false)
     if (_.isFunction(callback)) {
       callback()
-    }
+    } */
   }
 
   createAnnotationDeletedEventHandler () {
@@ -64,6 +64,7 @@ class DeleteAnnotationManager {
       // Retrieve current facet
       let facet = _.find(window.abwa.specific.mappingStudyManager.mappingStudy.facets, (facet) => { return facet.name === facetName })
       if (!_.isEmpty(facet)) {
+        debugger
         let codeTag = _.find(annotation.tags, (tag) => {
           return tag.includes(this.tags.code)
         })
@@ -195,48 +196,6 @@ class DeleteAnnotationManager {
         })
         facetAnnotations = _.concat(facetAnnotations, validationAnnotations)
         CommonHypersheetManager.updateClassificationInductive(facetAnnotations, facet, (err) => {
-          if (err) {
-            if (_.isFunction(callback)) {
-              callback(err)
-            }
-          } else {
-            if (_.isFunction(callback)) {
-              callback(null)
-            }
-          }
-        })
-      }
-    })
-  }
-
-  deleteClassificationFromHypersheetMultivalued (code, deletedAnnotation, callback) {
-    CommonHypersheetManager.getAllAnnotations((err, allAnnotations) => {
-      if (err) {
-        // Error while updating hypersheet, TODO notify user
-        if (_.isFunction(callback)) {
-          callback(err)
-        }
-      } else {
-        // Retrieve annotations with same facet
-        let facetAnnotations = _.filter(_.filter(allAnnotations, (annotation) => {
-          return _.find(annotation.tags, (tag) => {
-            return _.includes(tag, code.facet)
-          })
-        }), (iterAnnotation) => { // Filter current annotation if is retrieved in allAnnotations
-          return !_.isEqual(iterAnnotation.id, deletedAnnotation.id)
-        })
-        // Retrieve validation annotations for current facet
-        let validationAnnotations = _.filter(allAnnotations, (annotation) => {
-          return _.find(annotation.tags, (tag) => {
-            return _.includes(tag, this.tags.validated)
-          }) && _.every(annotation.references, (reference) => {
-            return _.find(facetAnnotations, (facetAnnotation) => {
-              return facetAnnotation.id === reference
-            })
-          })
-        })
-        facetAnnotations = _.concat(facetAnnotations, validationAnnotations)
-        CommonHypersheetManager.updateClassificationMultivalued(facetAnnotations, code.facet, (err) => {
           if (err) {
             if (_.isFunction(callback)) {
               callback(err)
