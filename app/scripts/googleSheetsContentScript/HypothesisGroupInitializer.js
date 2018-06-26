@@ -86,7 +86,7 @@ class HypothesisGroupInitializer {
                           ChromeStorage.setData(selectedGroupNamespace, {data: JSON.stringify(this.mappingStudy.hypothesisGroup)}, ChromeStorage.local)
                           // When window.focus
                           swal('Correctly configured', // TODO i18n
-                            chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + this.mappingStudy.hypothesisGroup.url + '" target="_blank">' + this.mappingStudy.hypothesisGroup.url + '</a>',
+                            chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + this.mappingStudy.hypothesisGroup.links.html + '" target="_blank">' + this.mappingStudy.hypothesisGroup.links.html + '</a>',
                             'success')
                           if (_.isFunction(callback)) {
                             callback()
@@ -113,7 +113,8 @@ class HypothesisGroupInitializer {
   }
 
   createHypothesisGroup (callback) {
-    window.hag.hypothesisClientManager.hypothesisClient.createHypothesisGroup(this.mappingStudy.name, (err, group) => {
+    window.hag.hypothesisClientManager.hypothesisClient.createNewGroup({
+      name: this.mappingStudy.name, description: 'A Mark&Go generated group to mark the exam ' + this.mappingStudy.name}, (err, group) => {
       if (err) {
         if (_.isFunction(callback)) {
           callback(err)
@@ -205,7 +206,7 @@ class HypothesisGroupInitializer {
       tags: tags,
       target: [],
       text: '',
-      uri: this.mappingStudy.hypothesisGroup.url // Group url
+      uri: this.mappingStudy.hypothesisGroup.links.html // Group url
     }
   }
 
@@ -219,7 +220,7 @@ class HypothesisGroupInitializer {
       tags: [Config.exams.namespace + ':' + Config.exams.tags.statics.spreadsheet],
       target: [],
       text: 'spreadsheetId: ' + this.mappingStudy.spreadsheetId + '\n' + 'sheetId: ' + this.mappingStudy.sheetId,
-      uri: this.mappingStudy.hypothesisGroup.url // Group url
+      uri: this.mappingStudy.hypothesisGroup.links.html // Group url
     }
   }
 
@@ -250,13 +251,13 @@ class HypothesisGroupInitializer {
       tags: [Config.exams.namespace + ':' + Config.exams.tags.statics.teacher],
       target: [],
       text: 'teacherId: ' + this.userProfile.userid,
-      uri: this.mappingStudy.hypothesisGroup.url // Group url
+      uri: this.mappingStudy.hypothesisGroup.links.html // Group url
     }
   }
 
   removeGroup (callback) {
     if (this.mappingStudy.hypothesisGroup) {
-      window.hag.hypothesisClientManager.hypothesisClient.removeAMemberFromAGroup(this.mappingStudy.hypothesisGroup.id, 'me', (err) => {
+      window.hag.hypothesisClientManager.hypothesisClient.removeAMemberFromAGroup({id: this.mappingStudy.hypothesisGroup.id}, (err) => {
         if (_.isFunction(callback)) {
           callback(err)
         } else {
