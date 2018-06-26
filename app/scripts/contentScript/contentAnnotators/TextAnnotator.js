@@ -1,7 +1,8 @@
 const ContentAnnotator = require('./ContentAnnotator')
 const ModeManager = require('../ModeManager')
 const ContentTypeManager = require('../ContentTypeManager')
-const TagManager = require('../TagManager')
+const Tag = require('../Tag')
+const TagGroup = require('../TagGroup')
 const Events = require('../Events')
 const DOMTextUtils = require('../../utils/DOMTextUtils')
 const LanguageUtils = require('../../utils/LanguageUtils')
@@ -429,8 +430,17 @@ class TextAnnotator extends ContentAnnotator {
         $(highlightedElement).css('background-color', color)
         // Set purpose color
         highlightedElement.dataset.color = color
-        let highestMark = _.last(tagInstance.group.tags).name
-        highlightedElement.title = 'Rubric competence: ' + tagInstance.group.config.name + '\nMark: ' + tagInstance.name + ' of ' + highestMark
+        let group = null
+        if (LanguageUtils.isInstanceOf(tagInstance, TagGroup)) {
+          group = tagInstance
+          // Set message
+          highlightedElement.title = 'Rubric competence: ' + group.config.name + '\nMark is pending, go to marking mode.'
+        } else if (LanguageUtils.isInstanceOf(tagInstance, Tag)) {
+          group = tagInstance.group
+          // Get highest mark
+          let highestMark = _.last(group.tags).name
+          highlightedElement.title = 'Rubric competence: ' + group.config.name + '\nMark: ' + tagInstance.name + ' of ' + highestMark
+        }
       })
       // Create context menu event for highlighted elements
       this.createContextMenuForAnnotation(annotation)
@@ -438,7 +448,9 @@ class TextAnnotator extends ContentAnnotator {
       this.createNextAnnotationHandler(annotation)
     } catch (e) {
       // TODO Handle error (maybe send in callback the error ¿?)
-      callback(new Error('Element not found'))
+      if (_.isFunction(callback)) {
+        callback(new Error('Element not found'))
+      }
     } finally {
       if (_.isFunction(callback)) {
         callback()
@@ -496,10 +508,7 @@ class TextAnnotator extends ContentAnnotator {
         }
         return {
           callback: (key) => {
-            if (key === 'validate') {
-              // Validate annotation category
-              LanguageUtils.dispatchCustomEvent(Events.annotationValidated, {annotation: annotation})
-            } else if (key === 'delete') {
+            if (key === 'delete') {
               // Delete annotation
               window.abwa.hypothesisClientManager.hypothesisClient.deleteAnnotation(annotation.id, (err, result) => {
                 if (err) {
@@ -558,12 +567,14 @@ class TextAnnotator extends ContentAnnotator {
     }
   }
 
-  goToFirstAnnotationOfTag (params) {
+  goToFirstAnnotationOfTag (tag) {
     // TODO Retrieve first annotation for tag
     let annotation = _.find(this.currentAnnotations, (annotation) => {
-      return _.isEqual(annotation.tags, params.tags)
+      return annotation.tags.includes(tag)
     })
-    this.goToAnnotation(annotation)
+    if (annotation) {
+      this.goToAnnotation(annotation)
+    }
   }
 
   goToAnnotation (annotation) {
@@ -652,6 +663,52 @@ class TextAnnotator extends ContentAnnotator {
     if (_.isFunction(callback)) {
       callback()
     }
+  }
+
+  /**
+   * Giving a list of old tags it changes all the annotations for the current document to the new tags
+   * @param oldTags
+   * @param newTags
+   * @param callback Error, Result
+   */
+  updateTagsForAllAnnotationsWithTag (oldTags, newTags, callback) {
+    // Get all annotations with oldTags
+    let oldTagsAnnotations = _.filter(this.allAnnotations, (annotation) => {
+      let tags = annotation.tags
+      return oldTags.every((oldTag) => {
+        return tags.includes(oldTag)
+      })
+    })
+    let promises = []
+    for (let i = 0; i < oldTagsAnnotations.length; i++) {
+      let oldTagAnnotation = oldTagsAnnotations[i]
+      promises.push(new Promise((resolve, reject) => {
+        oldTagAnnotation.tags = newTags
+        window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(oldTagAnnotation.id, oldTagAnnotation, (err, annotation) => {
+          if (err) {
+            reject(new Error('Unable to update annotation ' + oldTagAnnotation.id))
+          } else {
+            resolve(annotation)
+          }
+        })
+      }))
+    }
+    let annotations = []
+    Promise.all(promises).then((result) => {
+      // All annotations updated
+      annotations = result
+    }).finally((result) => {
+      if (_.isFunction(callback)) {
+        callback(null, annotations)
+      }
+    })
+  }
+
+  redrawAnnotations () {
+    // Unhighlight all annotations
+    this.unHighlightAllAnnotations()
+    // Highlight all annotations
+    this.highlightAnnotations(this.allAnnotations)
   }
 }
 

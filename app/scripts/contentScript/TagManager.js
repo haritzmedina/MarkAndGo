@@ -2,45 +2,11 @@ const _ = require('lodash')
 const $ = require('jquery')
 const jsYaml = require('js-yaml')
 const ModeManager = require('./ModeManager')
-const RolesManager = require('./RolesManager')
 const LanguageUtils = require('../utils/LanguageUtils')
 const ColorUtils = require('../utils/ColorUtils')
 const Events = require('./Events')
-
-class Tag {
-  constructor (config, group = null) {
-    this.group = group
-    this.name = config.name
-    this.namespace = config.namespace
-    this.tags = config.tags || [config.namespace + ':' + config.name]
-    if (config.options && config.options.color) {
-      if (!ColorUtils.hasAlpha(config.options.color)) {
-        this.color = ColorUtils.setAlphaToColor(config.options.color, 0.5) // Set a 0.5 alpha to all colors without alpha
-      } else {
-        this.color = config.options.color
-      }
-    } else {
-      this.color = ColorUtils.getHashColor(this.name)
-    }
-    this.options = config.options
-  }
-
-  getColor () {
-    return this.color
-  }
-}
-
-class TagGroup {
-  constructor (config, tags) {
-    this.config = config
-    this.tags = tags || []
-    this.config.color = this.config.color || 'rgba(150,150,150,0.5)'
-  }
-
-  getColor () {
-    return ColorUtils.setAlphaToColor(this.config.color, 0.5)
-  }
-}
+const Tag = require('./Tag')
+const TagGroup = require('./TagGroup')
 
 class TagManager {
   constructor (namespace, config) {
@@ -51,7 +17,6 @@ class TagManager {
       config: config
     }
     this.currentTags = []
-    this.currentIndexTags = []
     this.events = {}
   }
 
@@ -270,9 +235,31 @@ class TagManager {
         elements: tagGroup.tags,
         groupHandler: (event) => {
           // TODO Go to annotation with that group tag
+          window.abwa.contentAnnotator.goToFirstAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
         },
         buttonHandler: (event) => {
-          // TODO Update all annotations for current document/tag
+          // Update all annotations for current document/tag
+          window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
+            ['exam:isCriteriaOf:' + tagGroup.config.name],
+            ['exam:isCriteriaOf:' + tagGroup.config.name, 'exam:mark:' + event.target.title],
+            (err, annotations) => {
+              if (err) {
+
+              } else {
+                //
+                console.debug('All annotations with criteria ' + tagGroup.config.name + ' has mark ' + '')
+                // Reload all annotations
+                window.abwa.contentAnnotator.updateAllAnnotations((err, annotations) => {
+                  if (err) {
+                    console.error('Unexpected error when updating annotations')
+                  } else {
+                    window.abwa.contentAnnotator.redrawAnnotations()
+                  }
+                })
+                // Send event of mark
+                LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.title, annotations: annotations})
+              }
+            })
         }
       })
       this.tagsContainer.marking.append(panel)
@@ -294,25 +281,28 @@ class TagManager {
   }
 
   createGroupedButtons ({name, color = 'white', elements, groupHandler, buttonHandler}) {
-    if (elements.length > 0) { // Only create group containers for groups which have elements
-      // Create the container
-      let tagGroupTemplate = document.querySelector('#tagGroupTemplate')
-      let tagGroup = $(tagGroupTemplate.content.firstElementChild).clone().get(0)
-      let tagButtonContainer = $(tagGroup).find('.tagButtonContainer')
-      let groupNameSpan = tagGroup.querySelector('.groupName')
-      groupNameSpan.innerText = name
-      groupNameSpan.title = name
-      // Create buttons and add to the container
+    // Create the container
+    let tagGroupTemplate = document.querySelector('#tagGroupTemplate')
+    let tagGroup = $(tagGroupTemplate.content.firstElementChild).clone().get(0)
+    let tagButtonContainer = $(tagGroup).find('.tagButtonContainer')
+    let groupNameSpan = tagGroup.querySelector('.groupName')
+    groupNameSpan.innerText = name
+    groupNameSpan.title = name
+    // Create event handler for tag group
+    groupNameSpan.addEventListener('click', groupHandler)
+    // Create buttons and add to the container
+    if (elements.length > 1) { // Only create group containers for groups which have elements
       for (let i = 0; i < elements.length; i++) {
         let element = elements[i]
         let button = this.createButton({
           name: element.name,
-          color: ColorUtils.setAlphaToColor(element.color, 0.5),
-          handler: buttonHandler})
+          color: element.getColor(),
+          handler: buttonHandler
+        })
         tagButtonContainer.append(button)
       }
-      return tagGroup
     }
+    return tagGroup
   }
 
   initEventHandlers (callback) {
@@ -397,24 +387,31 @@ class TagManager {
   }
 
   findAnnotationTagInstance (annotation) {
+    let groupTag = this.getGroupFromAnnotation(annotation)
+    if (annotation.tags.length > 1) {
+      return this.getCodeFromAnnotation(annotation, groupTag)
+    } else {
+      return groupTag
+    }
+  }
+
+  getGroupFromAnnotation (annotation) {
     let tags = annotation.tags
     let criteriaTag = _.find(tags, (tag) => {
       return tag.includes('exam:isCriteriaOf:')
     }).replace('exam:isCriteriaOf:')
-    let groupTag = _.find(window.abwa.tagManager.currentTags, (tagGroupInstance) => {
+    return _.find(window.abwa.tagManager.currentTags, (tagGroupInstance) => {
       return criteriaTag.includes(tagGroupInstance.config.name)
     })
-    if (tags.length > 1) {
-      let markTag = _.find(tags, (tag) => {
-        return tag.includes('exam:mark:')
-      }).replace('exam:mark:')
-      let tag = _.find(groupTag.tags, (tagInstance) => {
-        return markTag.includes(tagInstance.name)
-      })
-      return tag
-    } else {
-      return groupTag
-    }
+  }
+
+  getCodeFromAnnotation (annotation, groupTag) {
+    let markTag = _.find(annotation.tags, (tag) => {
+      return tag.includes('exam:mark:')
+    }).replace('exam:mark:')
+    return _.find(groupTag.tags, (tagInstance) => {
+      return markTag.includes(tagInstance.name)
+    })
   }
 }
 
