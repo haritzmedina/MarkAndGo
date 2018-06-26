@@ -1,4 +1,3 @@
-const $ = require('jquery')
 const _ = require('lodash')
 const RolesManager = require('../../contentScript/RolesManager')
 const ModeManager = require('../../contentScript/ModeManager')

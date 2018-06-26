@@ -59,9 +59,9 @@ class MarkAnnotationManager {
             swal({ // TODO i18n
               position: 'top-end',
               type: 'success',
-              title: 'Correctly marked',
+              title: 'Correctly marked, but no evidences are found.',
               showConfirmButton: false,
-              timer: 1500
+              timer: 3000
             })
             if (_.isFunction(callback)) {
               callback(null, result)
