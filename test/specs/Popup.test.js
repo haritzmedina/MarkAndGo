@@ -6,7 +6,7 @@ const { JSDOM } = jsdom
 const { window } = new JSDOM({url: 'https://hypothes.is/api/'})
 global.window = window
 
-const HypothesisClient = require('../../app/scripts/hypothesis/HypothesisClient')
+const HypothesisClient = require('hypothesis-api-client')
 
 const TOKEN = process.env.HYPOTHESIS_TOKEN
 
@@ -33,14 +33,14 @@ describe('Popup test', function () {
         'target': [
           {
             'selector':
-              [
-                {
-                  'exact': 'give universal access to',
-                  'prefix': 've aiming to ',
-                  'type': 'TextQuoteSelector',
-                  'suffix': 'give universal'
-                }
-              ]
+            [
+              {
+                'exact': 'give universal access to',
+                'prefix': 've aiming to ',
+                'type': 'TextQuoteSelector',
+                'suffix': 'give universal'
+              }
+            ]
           }
         ],
         'body': {
