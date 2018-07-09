@@ -15,7 +15,7 @@ class BackToSpreadsheetLink {
         swal({
           type: 'warning',
           title: 'Oops...',
-          text: 'This primary study is not in your hypersheet. Please add it if you want to classify it.'
+          text: 'This folder/file does not pertain to any of your students for this exam. Please add it if you want to start marking.'
         })
         rowInSheet = 1
         // Create advert icon

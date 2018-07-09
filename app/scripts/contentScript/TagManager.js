@@ -103,7 +103,7 @@ class TagManager {
       this.model.groupAnnotations = annotations
       // Create tags based on annotations
       this.currentTags = this.createTagsBasedOnAnnotations()
-      // Populate tags containers for the modes<
+      // Populate tags containers for the modes
       this.createTagsButtonsForEvidencing()
       this.createTagsButtonsForMarking()
       if (_.isFunction(callback)) {
@@ -159,7 +159,6 @@ class TagManager {
         }
       }
     }
-    // Reorder the codes by name
     tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => { tagGroup.tags = _.sortBy(tagGroup.tags, 'name'); return tagGroup })
     // Set color for each code
     tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => {
