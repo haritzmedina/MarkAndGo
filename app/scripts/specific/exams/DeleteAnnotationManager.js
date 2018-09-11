@@ -1,4 +1,4 @@
-const Events = require('../../contentScript/Events')
+// TODO Uncomment const Events = require('../../contentScript/Events')
 const Config = require('../../Config')
 const CommonHypersheetManager = require('./CommonHypersheetManager')
 const swal = require('sweetalert2')
@@ -64,7 +64,6 @@ class DeleteAnnotationManager {
       // Retrieve current facet
       let facet = _.find(window.abwa.specific.mappingStudyManager.mappingStudy.facets, (facet) => { return facet.name === facetName })
       if (!_.isEmpty(facet)) {
-        debugger
         let codeTag = _.find(annotation.tags, (tag) => {
           return tag.includes(this.tags.code)
         })

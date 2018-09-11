@@ -7,7 +7,6 @@ const TagManager = require('./TagManager')
 const GroupSelector = require('./GroupSelector')
 const ConfigDecisionHelper = require('./ConfigDecisionHelper')
 const AnnotationBasedInitializer = require('./AnnotationBasedInitializer')
-const AugmentationManager = require('./AugmentationManager')
 const UserFilter = require('./UserFilter')
 const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
 const TextAnnotator = require('./contentAnnotators/TextAnnotator')
@@ -68,7 +67,6 @@ class ContentScriptManager {
         // TODO Inform user no defined configuration found
         console.debug('No supported configuration found for this group')
         this.destroyRolesManager()
-        this.destroyAugmentationOperations()
         this.destroyTagsManager()
         this.destroyUserFilter()
         this.destroyContentAnnotator()
@@ -89,7 +87,6 @@ class ContentScriptManager {
             })
           })
         })
-        this.reloadAugmentationOperations(config)
       }
     })
   }
@@ -112,14 +109,6 @@ class ContentScriptManager {
     // Create a new tag manager for the current group
     window.abwa.tagManager = new TagManager(config.namespace, config.tags) // TODO Depending on the type of annotator
     window.abwa.tagManager.init(callback)
-  }
-
-  reloadAugmentationOperations (config, callback) {
-    // Destroy current augmentation operations
-    this.destroyAugmentationOperations()
-    // Create augmentation operations for the current group
-    window.abwa.augmentationManager = new AugmentationManager(config)
-    window.abwa.augmentationManager.init(callback)
   }
 
   reloadRolesManager (config, callback) {
@@ -152,23 +141,16 @@ class ContentScriptManager {
     }
   }
 
-  destroyAugmentationOperations () {
-    // Destroy current augmentation operations
-    if (!_.isEmpty(window.abwa.augmentationManager)) {
-      window.abwa.augmentationManager.destroy()
-    }
-  }
-
   reloadUserFilter (config, callback) {
-    // Destroy current augmentation operations
+    // Destroy user filter
     this.destroyUserFilter()
-    // Create augmentation operations for the current group
+    // Create user filter
     window.abwa.userFilter = new UserFilter(config)
     window.abwa.userFilter.init(callback)
   }
 
   destroyUserFilter (callback) {
-    // Destroy current augmentation operations
+    // Destroy current user filter
     if (!_.isEmpty(window.abwa.userFilter)) {
       window.abwa.userFilter.destroy()
     }
@@ -177,7 +159,6 @@ class ContentScriptManager {
   destroy (callback) {
     console.log('Destroying content script manager')
     this.destroyContentTypeManager(() => {
-      this.destroyAugmentationOperations()
       this.destroyTagsManager()
       this.destroyContentAnnotator()
       this.destroyUserFilter()

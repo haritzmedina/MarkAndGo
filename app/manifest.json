@@ -26,15 +26,6 @@
       "matches": ["https://docs.google.com/spreadsheets/d/*"],
       "js": ["scripts/googleSheetsContentScript.js"],
       "run_at": "document_end"
-    },
-    {
-      "matches": ["*://dl.acm.org/citation.cfm?*"],
-      "js": ["scripts/acmContentScript.js"],
-      "run_at": "document_end"
-    }, {
-      "matches": ["*://www.sciencedirect.com/science/article/pii/*"],
-      "js": ["scripts/scienceDirectContentScript.js"],
-      "run_at": "document_end"
     }, {
       "matches": ["https://hypothes.is/groups/*/*"],
       "js": ["scripts/hypothesisGroupContentScript.js"],
