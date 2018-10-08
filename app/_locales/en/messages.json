@@ -24,7 +24,7 @@
     "description": "Message to show when Google Sheets permission is required"
   },
   "ShareHypothesisGroup": {
-    "message": "Copy and share the group with the rest of the reviewers to start data extraction collaboratively.",
+    "message": "Copy and share the group with your students to provide the feedback.",
     "description": "Message to show when hypothesis group is created"
   },
   "Mode": {

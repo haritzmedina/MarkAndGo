@@ -17,6 +17,8 @@ const HypothesisManager = require('./background/HypothesisManager')
 const GoogleSheetsManager = require('./background/GoogleSheetsManager')
 const DoiManager = require('./background/DoiManager')
 const Popup = require('./popup/Popup')
+const MoodleDownloadManager = require('./background/MoodleDownloadManager')
+const MoodleBackgroundManager = require('./background/MoodleBackgroundManager')
 
 const _ = require('lodash')
 
@@ -38,6 +40,14 @@ class Background {
     // Initialize doi manager
     this.doiManager = new DoiManager()
     this.doiManager.init()
+
+    // Initialize moodle download manager
+    this.moodleDownloadManager = new MoodleDownloadManager()
+    this.moodleDownloadManager.init()
+
+    // Initialize moodle background manager
+    this.moodleBackgroundManager = new MoodleBackgroundManager()
+    this.moodleBackgroundManager.init()
 
     // Initialize page_action event handler
     chrome.pageAction.onClicked.addListener((tab) => {

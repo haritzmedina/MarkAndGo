@@ -16,15 +16,15 @@
   "content_scripts": [
     {
       "matches": ["*://*/*"],
-      "exclude_matches": ["https://docs.google.com/spreadsheets/d/*", "https://hypothes.is/login"],
+      "exclude_matches": ["*://*/grade/grading/*", "*://*/mod/assign/view.php*"],
       "js": ["scripts/contentScript.js"],
       "css": ["styles/contentScript.css"],
       "run_at": "document_start",
       "all_frames": false
     },
     {
-      "matches": ["https://docs.google.com/spreadsheets/d/*"],
-      "js": ["scripts/googleSheetsContentScript.js"],
+      "matches": ["*://*/grade/grading/*", "*://*/mod/assign/view.php*"],
+      "js": ["scripts/moodleContentScript.js"],
       "run_at": "document_end"
     }, {
       "matches": ["https://hypothes.is/groups/*/*"],
@@ -43,13 +43,15 @@
   },
   "permissions": [
     "contextMenus",
+    "downloads",
     "https://hypothes.is/",
     "identity",
     "storage",
     "tabs",
     "webRequest",
     "webRequestBlocking",
-    "*://www.dropbox.com/s/"
+    "*://www.dropbox.com/s/",
+    "file://*/*"
   ],
   "oauth2": {
     "client_id": "1008657588862-r84qhkr8ggt9s36b4m8tr2uhg429o9on.apps.googleusercontent.com",

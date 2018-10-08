@@ -45,7 +45,7 @@ class HypothesisClientManager {
 
   logInHypothesis (callback) {
     // TODO Check if user grant permission to access hypothesis account
-    if (!window.hag.hypothesisClientManager.isLoggedIn()) {
+    if (!this.isLoggedIn()) {
       this.askUserToLogInHypothesis((err, token) => {
         if (err) {
           callback(err)
@@ -54,7 +54,7 @@ class HypothesisClientManager {
         }
       })
     } else {
-      callback(null, window.hag.hypothesisClientManager.hypothesisToken)
+      callback(null, this.hypothesisToken)
     }
   }
 
@@ -75,9 +75,9 @@ class HypothesisClientManager {
               callback(new Error(result.error))
             }
           } else {
-            window.hag.hypothesisClientManager.reloadHypothesisClient(() => {
+            this.reloadHypothesisClient(() => {
               if (_.isFunction(callback)) {
-                callback(null, window.hag.hypothesisClientManager.hypothesisToken)
+                callback(null, this.hypothesisToken)
               }
             })
           }

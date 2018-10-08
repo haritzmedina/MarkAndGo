@@ -1,6 +1,5 @@
 const _ = require('lodash')
 const jsYaml = require('js-yaml')
-const BackToSpreadsheetLink = require('./BackToSpreadsheetLink')
 const PrimaryStudySheetManager = require('./PrimaryStudySheetManager')
 const MappingStudyManager = require('./MappingStudyManager')
 const CreateAnnotationManager = require('./CreateAnnotationManager')
@@ -11,6 +10,7 @@ const ReorderSpreadsheet = require('./ReorderSpreadsheet')
 const StudentLogging = require('./StudentLogging')
 const Screenshots = require('./Screenshots')
 const Config = require('../../Config')
+const BackToWorkspace = require('./BackToWorkspace')
 
 class ExamDataExtractionContentScript {
   constructor () {
@@ -38,8 +38,11 @@ class ExamDataExtractionContentScript {
               window.abwa.specific.reorderSpreadsheet = new ReorderSpreadsheet()
               window.abwa.specific.reorderSpreadsheet.init(() => {
                 // Create link to back to spreadsheet
-                window.abwa.specific.backToSpreadsheetLink = new BackToSpreadsheetLink()
-                window.abwa.specific.backToSpreadsheetLink.init()
+                // TODO Change with workspace
+                window.abwa.specific.backToWorkspace = new BackToWorkspace()
+                window.abwa.specific.backToWorkspace.init()
+                // window.abwa.specific.backToSpreadsheetLink = new BackToSpreadsheetLink()
+                // window.abwa.specific.backToSpreadsheetLink.init()
                 // Create navigation ring
                 window.abwa.specific.navigationRing = new StudentsNavigationRing()
                 window.abwa.specific.navigationRing.init()
@@ -115,9 +118,6 @@ class ExamDataExtractionContentScript {
         }
         if (window.abwa.specific.deleteAnnotationManager) {
           window.abwa.specific.deleteAnnotationManager.destroy()
-        }
-        if (window.abwa.specific.validateAnnotationManager) {
-          window.abwa.specific.validateAnnotationManager.destroy()
         }
         if (window.abwa.specific.studentLogging) {
           window.abwa.specific.studentLogging.destroy()
