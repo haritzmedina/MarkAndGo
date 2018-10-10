@@ -217,8 +217,11 @@ class TagManager {
         name: tagGroup.config.name,
         color: ColorUtils.setAlphaToColor(tagGroup.config.color, 0.5),
         handler: (event) => {
-          LanguageUtils.dispatchCustomEvent(Events.annotate, {tags: [
-            this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name]})
+          let tags = [
+            this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name,
+            'exam:studentId:' + window.abwa.contentTypeManager.fileMetadata.studentId
+          ]
+          LanguageUtils.dispatchCustomEvent(Events.annotate, {tags: tags})
         }})
       this.tagsContainer.evidencing.append(button)
     }
@@ -240,7 +243,7 @@ class TagManager {
           // Update all annotations for current document/tag
           window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
             ['exam:isCriteriaOf:' + tagGroup.config.name],
-            ['exam:isCriteriaOf:' + tagGroup.config.name, 'exam:mark:' + event.target.title],
+            ['exam:isCriteriaOf:' + tagGroup.config.name, 'exam:mark:' + event.target.dataset.mark],
             (err, annotations) => {
               if (err) {
 
@@ -256,7 +259,7 @@ class TagManager {
                   }
                 })
                 // Send event of mark
-                LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.title, annotations: annotations})
+                LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
               }
             })
         }
@@ -274,6 +277,7 @@ class TagManager {
     } else {
       tagButton.title = name
     }
+    tagButton.dataset.mark = name
     tagButton.setAttribute('role', 'annotation')
     if (color) {
       $(tagButton).css('background-color', color)
@@ -393,7 +397,12 @@ class TagManager {
   findAnnotationTagInstance (annotation) {
     let groupTag = this.getGroupFromAnnotation(annotation)
     if (annotation.tags.length > 1) {
-      return this.getCodeFromAnnotation(annotation, groupTag)
+      // Check if has code defined, because other tags can be presented (like exam:studentId:X)
+      if (this.hasCodeAnnotation(annotation)) {
+        return this.getCodeFromAnnotation(annotation, groupTag)
+      } else {
+        return groupTag
+      }
     } else {
       return groupTag
     }
@@ -415,6 +424,12 @@ class TagManager {
     }).replace('exam:mark:')
     return _.find(groupTag.tags, (tagInstance) => {
       return markTag.includes(tagInstance.name)
+    })
+  }
+
+  hasCodeAnnotation (annotation) {
+    return _.some(annotation.tags, (tag) => {
+      return tag.includes('exam:mark:')
     })
   }
 }
