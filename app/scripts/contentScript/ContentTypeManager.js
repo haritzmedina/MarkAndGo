@@ -12,6 +12,8 @@ class ContentTypeManager {
     this.urlChangeInterval = null
     this.urlParam = null
     this.documentType = ContentTypeManager.documentTypes.html // By default document type is html
+    this.localFile = false
+    this.fileMetadata = {}
   }
 
   init (callback) {
@@ -22,31 +24,75 @@ class ContentTypeManager {
       this.tryToLoadDoi()
       this.tryToLoadPublicationPDF()
       this.tryToLoadURLParam()
+      // TODO this.tryToLoadLocalFIleURL() from file metadata
       // If current web is pdf viewer.html, set document type as pdf
       if (window.location.pathname === '/content/pdfjs/web/viewer.html') {
         this.waitUntilPDFViewerLoad(() => {
+          // Save document type as pdf
+          this.documentType = ContentTypeManager.documentTypes.pdf
+          // Save pdf fingerprint
           this.pdfFingerprint = window.PDFViewerApplication.pdfDocument.pdfInfo.fingerprint
+          // Get document URL
           if (this.urlParam) {
             this.documentURL = this.urlParam
+            if (_.isFunction(callback)) {
+              callback()
+            }
           } else {
-            this.documentURL = window.PDFViewerApplication.url
-          }
-          this.documentType = ContentTypeManager.documentTypes.pdf
-          if (_.isFunction(callback)) {
-            callback()
+            // Is a local file
+            if (window.PDFViewerApplication.url.startsWith('file:///')) {
+              this.localFile = true
+              // Check in moodle download manager if the file exists
+              chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: window.PDFViewerApplication.url}}, (fileMetadata) => {
+                if (_.isEmpty(fileMetadata)) {
+                  // TODO Warn user document is not from moodle
+                  this.documentURL = window.PDFViewerApplication.url
+                } else {
+                  this.fileMetadata = fileMetadata.file
+                  this.documentURL = fileMetadata.file.url
+                }
+                if (_.isFunction(callback)) {
+                  callback()
+                }
+              })
+            } else { // Is an online resource
+              // Support in ajax websites web url change, web url can change dynamically, but locals never do
+              this.initSupportWebURLChange()
+              this.documentURL = window.PDFViewerApplication.url
+              if (_.isFunction(callback)) {
+                callback()
+              }
+            }
           }
         })
       } else {
+        this.documentType = ContentTypeManager.documentTypes.html
         if (this.urlParam) {
           this.documentURL = this.urlParam
         } else {
-          this.documentURL = URLUtils.retrieveMainUrl(window.location.href)
-        }
-        this.documentType = ContentTypeManager.documentTypes.html
-        // Support in ajax websites web url change
-        this.initSupportWebURLChange()
-        if (_.isFunction(callback)) {
-          callback()
+          if (window.location.href.startsWith('file:///')) {
+            this.localFile = true
+            // Check in moodle download manager if the file exists
+            chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: window.location.href}}, (fileMetadata) => {
+              if (_.isEmpty(fileMetadata)) {
+                // TODO Warn user document is not from moodle
+                this.documentURL = URLUtils.retrieveMainUrl(window.location.href)
+              } else {
+                this.fileMetadata = fileMetadata.file
+                this.documentURL = fileMetadata.file.url
+              }
+              if (_.isFunction(callback)) {
+                callback()
+              }
+            })
+          } else {
+            // Support in ajax websites web url change, web url can change dynamically, but locals never do
+            this.initSupportWebURLChange()
+            this.documentURL = URLUtils.retrieveMainUrl(window.location.href)
+            if (_.isFunction(callback)) {
+              callback()
+            }
+          }
         }
       }
     }
