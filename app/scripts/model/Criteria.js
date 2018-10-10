@@ -34,7 +34,7 @@ class Criteria extends GuideElement {
     }
   }
 
-  fromAnnotations () {
+  fromAnnotations (annotations) {
 
   }
 

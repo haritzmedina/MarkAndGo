@@ -13,11 +13,11 @@ class AnnotationGuide {
 
   }
 
-  fromAnnotation ({annotation}) {
+  fromAnnotation (annotation) {
 
   }
 
-  fromAnnotations ({annotations}) {
+  fromAnnotations (annotations) {
 
   }
 }

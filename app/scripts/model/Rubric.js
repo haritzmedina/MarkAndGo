@@ -1,4 +1,6 @@
 const AnnotationGuide = require('./AnnotationGuide')
+const jsYaml = require('js-yaml')
+const _ = require('lodash')
 
 class Rubric extends AnnotationGuide {
   constructor ({moodleEndpoint, assignmentId, assignmentName}) {
@@ -31,6 +33,38 @@ class Rubric extends AnnotationGuide {
       text: 'moodleEndpoint: ' + this.moodleEndpoint + '\nassignmentId: ' + this.assignmentId,
       uri: this.hypothesisGroup.links.html
     }
+  }
+
+  static fromAnnotations (annotations) {
+    let rubricAnnotation = _.remove(annotations, (annotation) => {
+      return _.some(annotation.tags, (tag) => { return tag === 'exam:metadata' })
+    })
+    let rubric = Rubric.fromAnnotation(rubricAnnotation[0])
+    // TODO Complete the rubric from the annotations
+    /*
+    // For the rest of annotations, get criterias and levels
+    let criteriasAnnotations = _.remove(annotations, (annotation) => {
+      return _.some(annotation.tags, (tag) => {
+        return tag.includes('exam:criteria:')
+      })
+    })
+    let levelsAnnotations = _.remove(annotations, (annotation) => {
+      return _.some(annotation.tags, (tag) => {
+        return tag.includes('exam:mark:')
+      })
+    })
+    for (let i = 0; i < criteriasAnnotations.length; i++) {
+
+    }
+    */
+    return rubric
+  }
+
+  static fromAnnotation (annotation) {
+    let config = jsYaml.load(annotation.text)
+    config.assignmentName = window.abwa.groupSelector.currentGroup.name
+    config.hypothesisGroup = window.abwa.groupSelector.currentGroup
+    return new Rubric(config)
   }
 }
 

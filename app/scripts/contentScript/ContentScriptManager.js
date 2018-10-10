@@ -11,6 +11,7 @@ const UserFilter = require('./UserFilter')
 const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
 const TextAnnotator = require('./contentAnnotators/TextAnnotator')
 const RolesManager = require('./RolesManager')
+const RubricManager = require('./RubricManager')
 
 class ContentScriptManager {
   constructor () {
@@ -74,21 +75,29 @@ class ContentScriptManager {
       } else {
         console.debug('Loaded supported configuration %s', config.namespace)
         this.reloadRolesManager(config, () => {
-          // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
-          this.reloadTagsManager(config, () => {
-            this.reloadContentAnnotator(config, () => {
-              if (config.userFilter) {
-                this.reloadUserFilter(config, () => {
+          this.reloadRubricManager(config, () => {
+            // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
+            this.reloadTagsManager(config, () => {
+              this.reloadContentAnnotator(config, () => {
+                if (config.userFilter) {
+                  this.reloadUserFilter(config, () => {
+                    this.reloadSpecificContentManager(config)
+                  })
+                } else {
                   this.reloadSpecificContentManager(config)
-                })
-              } else {
-                this.reloadSpecificContentManager(config)
-              }
+                }
+              })
             })
           })
         })
       }
     })
+  }
+
+  reloadRubricManager (config, callback) {
+    this.destroyRubricManager()
+    window.abwa.rubricManager = new RubricManager(config)
+    window.abwa.rubricManager.init(callback)
   }
 
   reloadContentAnnotator (config, callback) {
@@ -119,6 +128,12 @@ class ContentScriptManager {
     window.abwa.roleManager.init()
     if (_.isFunction(callback)) {
       callback()
+    }
+  }
+
+  destroyRubricManager (callback) {
+    if (!_.isEmpty(window.abwa.rubricManager)) {
+      window.abwa.rubricManager.destroy()
     }
   }
 
