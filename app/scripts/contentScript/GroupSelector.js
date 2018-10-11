@@ -8,6 +8,7 @@ const defaultGroup = {id: '__world__', name: 'Public', public: true}
 
 class GroupSelector {
   constructor () {
+    this.groups = null
     this.currentGroup = null
     this.user = {}
   }
@@ -16,9 +17,11 @@ class GroupSelector {
     console.debug('Initializing group selector')
     this.addGroupSelectorToSidebar(() => {
       this.reloadGroupsContainer(() => {
-        if (_.isFunction(callback)) {
-          callback()
-        }
+        this.retrieveUserProfile(() => {
+          if (_.isFunction(callback)) {
+            callback()
+          }
+        })
       })
     })
   }
@@ -122,7 +125,7 @@ class GroupSelector {
       console.debug(groups)
       let dropdownMenu = document.querySelector('#groupSelector')
       dropdownMenu.innerHTML = '' // Remove all groups
-      this.user.groups.forEach(group => {
+      this.groups.forEach(group => {
         let groupSelectorItem = document.createElement('option')
         groupSelectorItem.dataset.groupId = group.id
         groupSelectorItem.innerText = group.name
@@ -140,6 +143,21 @@ class GroupSelector {
   }
 
   retrieveHypothesisGroups (callback) {
+    window.abwa.hypothesisClientManager.hypothesisClient.getListOfGroups({}, (err, groups) => {
+      if (err) {
+        if (_.isFunction(callback)) {
+          callback(err)
+        }
+      } else {
+        this.groups = groups
+        if (_.isFunction(callback)) {
+          callback(null, groups)
+        }
+      }
+    })
+  }
+
+  retrieveUserProfile (callback) {
     window.abwa.hypothesisClientManager.hypothesisClient.getUserProfile((err, profile) => {
       if (err) {
         if (_.isFunction(callback)) {
@@ -163,7 +181,7 @@ class GroupSelector {
   }
 
   updateCurrentGroupHandler (groupId) {
-    this.currentGroup = _.find(this.user.groups, (group) => { return groupId === group.id })
+    this.currentGroup = _.find(this.groups, (group) => { return groupId === group.id })
     ChromeStorage.setData(selectedGroupNamespace, {data: JSON.stringify(this.currentGroup)}, ChromeStorage.local, () => {
       console.debug('Group updated. Name: %s id: %s', this.currentGroup.name, this.currentGroup.id)
       // Dispatch event
