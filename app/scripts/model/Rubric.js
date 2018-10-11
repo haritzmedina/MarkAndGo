@@ -6,8 +6,8 @@ const _ = require('lodash')
 const LanguageUtils = require('../utils/LanguageUtils')
 
 class Rubric extends AnnotationGuide {
-  constructor ({moodleEndpoint, assignmentId, assignmentName}) {
-    super({name: assignmentName})
+  constructor ({moodleEndpoint, assignmentId, assignmentName, hypothesisGroup}) {
+    super({name: assignmentName, hypothesisGroup})
     this.moodleEndpoint = moodleEndpoint
     this.assignmentId = assignmentId
     this.criterias = this.guideElements
