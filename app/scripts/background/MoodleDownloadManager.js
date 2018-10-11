@@ -21,7 +21,11 @@ class MoodleDownloadManager {
     chrome.downloads.onChanged.addListener((downloadItem) => {
       if (this.files[downloadItem.id] && downloadItem.filename && downloadItem.filename.current) {
         // Save download file path
-        this.files[downloadItem.id]['localPath'] = encodeURI('file://' + downloadItem.filename.current)
+        if (downloadItem.filename.current.startsWith('/')) { // Unix-based filesystem
+          this.files[downloadItem.id]['localPath'] = encodeURI('file://' + downloadItem.filename.current)
+        } else { // Windows-based filesystem
+          this.files[downloadItem.id]['localPath'] = encodeURI('file:///' + _.replace(downloadItem.filename.current, /\\/g, '/'))
+        }
       }
     })
 
