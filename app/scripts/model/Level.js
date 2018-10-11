@@ -1,4 +1,6 @@
 const GuideElement = require('./GuideElement')
+const jsYaml = require('js-yaml')
+const _ = require('lodash')
 
 class Level extends GuideElement {
   constructor ({name, description, color, criteria, levelId}) {
@@ -28,8 +30,23 @@ class Level extends GuideElement {
     }
   }
 
-  fromAnnotations () {
-
+  static fromAnnotation (annotation, criteria = {}) {
+    let markTag = _.find(annotation.tags, (tag) => {
+      return tag.includes('exam:mark:')
+    })
+    if (_.isString(markTag)) {
+      let name = markTag.replace('exam:mark:', '')
+      let config = jsYaml.load(annotation.text)
+      if (_.isObject(config)) {
+        let description = config.description
+        let levelId = config.levelId
+        return new Level({name, description, criteria, levelId})
+      } else {
+        console.error('Unable to retrieve mark configuration from annotation')
+      }
+    } else {
+      console.error('Unable to retrieve mark from annotation')
+    }
   }
 }
 

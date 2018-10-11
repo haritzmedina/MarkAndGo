@@ -1,4 +1,6 @@
 const GuideElement = require('./GuideElement')
+const jsYaml = require('js-yaml')
+const _ = require('lodash')
 
 class Criteria extends GuideElement {
   constructor ({name, color, criteriaId, rubric}) {
@@ -34,12 +36,26 @@ class Criteria extends GuideElement {
     }
   }
 
-  fromAnnotations (annotations) {
+  static fromAnnotations (annotations) {
 
   }
 
-  fromAnnotation () {
+  static fromAnnotation (annotation, rubric = {}) {
+    let criteriaTag = _.find(annotation.tags, (tag) => {
+      return tag.includes('exam:criteria:')
+    })
+    if (_.isString(criteriaTag)) {
+      let name = criteriaTag.replace('exam:criteria:', '')
+      let config = jsYaml.load(annotation.text)
+      if (_.isObject(config)) {
+        let criteriaId = config.criteriaId
+        return new Criteria({name, criteriaId, rubric})
+      } else {
 
+      }
+    } else {
+      console.error('Unable to retrieve criteria from annotation')
+    }
   }
 }
 

@@ -1,6 +1,9 @@
 const AnnotationGuide = require('./AnnotationGuide')
+const Criteria = require('./Criteria')
+const Level = require('./Level')
 const jsYaml = require('js-yaml')
 const _ = require('lodash')
+const LanguageUtils = require('../utils/LanguageUtils')
 
 class Rubric extends AnnotationGuide {
   constructor ({moodleEndpoint, assignmentId, assignmentName}) {
@@ -41,7 +44,6 @@ class Rubric extends AnnotationGuide {
     })
     let rubric = Rubric.fromAnnotation(rubricAnnotation[0])
     // TODO Complete the rubric from the annotations
-    /*
     // For the rest of annotations, get criterias and levels
     let criteriasAnnotations = _.remove(annotations, (annotation) => {
       return _.some(annotation.tags, (tag) => {
@@ -54,9 +56,29 @@ class Rubric extends AnnotationGuide {
       })
     })
     for (let i = 0; i < criteriasAnnotations.length; i++) {
-
+      let criteria = Criteria.fromAnnotation(criteriasAnnotations[i], rubric)
+      if (LanguageUtils.isInstanceOf(criteria, Criteria)) {
+        rubric.criterias.push(criteria)
+      }
     }
-    */
+    // Order criterias by criteria id
+    rubric.criterias = _.orderBy(rubric.criterias, ['criteriaId'])
+    for (let i = 0; i < levelsAnnotations.length; i++) {
+      let levelAnnotation = levelsAnnotations[i]
+      // Get criteria corresponding to the level
+      let levelConfig = jsYaml.load(levelAnnotation.text)
+      if (_.isObject(levelConfig) && _.isNumber(levelConfig.criteriaId)) {
+        let criteriaId = levelConfig.criteriaId
+        let criteria = _.find(rubric.criterias, (criteria) => {
+          return criteria.criteriaId === criteriaId
+        })
+        let level = Level.fromAnnotation(levelAnnotation, criteria)
+        criteria.levels.push(level)
+      } else {
+        console.error('Unable to find criteria for this level annotation')
+        console.error(annotations)
+      }
+    }
     return rubric
   }
 
