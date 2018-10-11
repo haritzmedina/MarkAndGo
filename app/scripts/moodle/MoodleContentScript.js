@@ -24,8 +24,21 @@ class MoodleContentScript {
       if (window.location.href.includes('mod/assign/view')) {
         this.assignmentId = (new URL(window.location)).searchParams.get('id')
         this.moodleEndpoint = _.split(window.location.href, 'mod/assign/view')[0]
-        let assignmentElement = document.querySelector('.breadcrumb').querySelector('a[href*="mod/assign"]')
-        this.assignmentName = assignmentElement.innerText
+        let assignmentElement = document.querySelector('.breadcrumb')
+        if (_.isElement(assignmentElement)) {
+          assignmentElement = assignmentElement.querySelector('a[href*="mod/assign"]')
+          this.assignmentName = assignmentElement.innerText
+        } else {
+          assignmentElement = document.querySelector('[data-region="assignment-info"]')
+          if (_.isElement(assignmentElement)) {
+            this.assignmentName = assignmentElement.querySelector('[href*="mod/assign"]').innerText.split(':')[1].trim()
+          } else {
+            swal('Oops!', // TODO i18n
+              'There was a problem when retrieving task information from moodle. Make sure that you are in the main page of the assignment. <br/>' +
+              'If the error continues, please <a href="https://github.com/haritzmedina/markandgo/issues" target="_blank">contact administrator</a>.',
+              'error') // Show to the user the error
+          }
+        }
       } else if (window.location.href.includes('grade/grading/')) {
         let assignmentElement = document.querySelector('a[href*="mod/assign"]')
         let assignmentURL = assignmentElement.href
@@ -134,7 +147,7 @@ class MoodleContentScript {
           let criteria = new Criteria({name: moodleCriteria.description, criteriaId: moodleCriteria.id, rubric: rubric})
           for (let j = 0; j < moodleCriteria.levels.length; j++) {
             let moodleLevel = moodleCriteria.levels[j]
-            let level = new Level({name: moodleLevel.score, description: moodleLevel.definition, criteria: criteria})
+            let level = new Level({name: moodleLevel.score, levelId: moodleLevel.id, description: moodleLevel.definition, criteria: criteria})
             criteria.levels.push(level)
           }
           rubric.criterias.push(criteria)
