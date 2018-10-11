@@ -479,7 +479,7 @@ class TextAnnotator extends ContentAnnotator {
         let highlightedElement = highlightedElements[i]
         highlightedElement.addEventListener('click', () => {
           // If mode is index, move to next annotation
-          if (window.abwa.modeManager.mode === ModeManager.modes.index) {
+          if (window.abwa.modeManager.mode === ModeManager.modes.mark) {
             this.goToAnnotation(this.currentAnnotations[nextAnnotationIndex])
           }
         })
