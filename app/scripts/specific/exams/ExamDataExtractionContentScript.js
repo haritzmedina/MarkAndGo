@@ -1,16 +1,10 @@
 const _ = require('lodash')
 const jsYaml = require('js-yaml')
-const PrimaryStudySheetManager = require('./PrimaryStudySheetManager')
-const MappingStudyManager = require('./MappingStudyManager')
-const CreateAnnotationManager = require('./CreateAnnotationManager')
-const DeleteAnnotationManager = require('./DeleteAnnotationManager')
-const MarkAnnotationManager = require('./MarkAnnotationManager')
-const StudentsNavigationRing = require('./StudentsNavigationRing')
-const ReorderSpreadsheet = require('./ReorderSpreadsheet')
 const StudentLogging = require('./StudentLogging')
 const Screenshots = require('./Screenshots')
 const Config = require('../../Config')
 const BackToWorkspace = require('./BackToWorkspace')
+const MoodleGradingManager = require('./MoodleGradingManager')
 
 class ExamDataExtractionContentScript {
   constructor () {
@@ -26,41 +20,14 @@ class ExamDataExtractionContentScript {
           callback(err)
         }
       } else {
-        if (isTeacher) { // Load possibility to updated the spreadsheet
+        if (isTeacher) { // Open modes
           window.abwa.specific = window.abwa.specific || {}
-          // Retrieve mapping study manager
-          window.abwa.specific.mappingStudyManager = new MappingStudyManager()
-          window.abwa.specific.mappingStudyManager.init(() => {
-            // Retrieve primary study sheet
-            window.abwa.specific.primaryStudySheetManager = new PrimaryStudySheetManager()
-            window.abwa.specific.primaryStudySheetManager.init(() => {
-              // Change order of elements in tag manager
-              window.abwa.specific.reorderSpreadsheet = new ReorderSpreadsheet()
-              window.abwa.specific.reorderSpreadsheet.init(() => {
-                // Create link to back to spreadsheet
-                // TODO Change with workspace
-                window.abwa.specific.backToWorkspace = new BackToWorkspace()
-                window.abwa.specific.backToWorkspace.init()
-                // window.abwa.specific.backToSpreadsheetLink = new BackToSpreadsheetLink()
-                // window.abwa.specific.backToSpreadsheetLink.init()
-                // Create navigation ring
-                window.abwa.specific.navigationRing = new StudentsNavigationRing()
-                window.abwa.specific.navigationRing.init()
-                // Create annotation handler
-                window.abwa.specific.createAnnotationManager = new CreateAnnotationManager()
-                window.abwa.specific.createAnnotationManager.init()
-                // Mark annotation handler
-                window.abwa.specific.markAnnotationManager = new MarkAnnotationManager()
-                window.abwa.specific.markAnnotationManager.init()
-                // Delete annotation handler
-                window.abwa.specific.deleteAnnotationManager = new DeleteAnnotationManager()
-                window.abwa.specific.deleteAnnotationManager.init()
-                if (_.isFunction(callback)) {
-                  callback()
-                }
-              })
-            })
-          })
+
+          window.abwa.specific.moodleGradingManager = new MoodleGradingManager()
+          window.abwa.specific.moodleGradingManager.init()
+
+          window.abwa.specific.backToWorkspace = new BackToWorkspace()
+          window.abwa.specific.backToWorkspace.init()
         } else { // Change to checker mode
           window.abwa.specific = window.abwa.specific || {}
           // Log student reviewed the exam

@@ -132,16 +132,16 @@ class MoodleContentScript {
   constructRubricsModel ({moodleRubrics, callback}) {
     let rubric = new Rubric({
       moodleEndpoint: this.moodleEndpoint,
-      assignmentName: this.assignmentName,
-      assignmentId: this.assignmentId
+      assignmentName: this.assignmentName
     })
     // Ensure a rubric is retrieved
     if (moodleRubrics.areas[0].activemethod === 'rubric') {
-      // Set assignment id
-      rubric.assignmentId = moodleRubrics.areas[0].cmid
-      // Generate rubric model
       let rubricCriteria = _.get(moodleRubrics, 'areas[0].definitions[0].rubric.rubric_criteria')
-      if (!_.isUndefined(rubricCriteria)) {
+      let rubricAssignmentId = _.get(moodleRubrics, 'areas[0].definitions[0].id')
+      if (!_.isUndefined(rubricCriteria) && !_.isUndefined(rubricAssignmentId)) {
+        // Set assignment id
+        rubric.assignmentId = moodleRubrics.areas[0].definitions[0].id
+        // Generate rubric model
         for (let i = 0; i < rubricCriteria.length; i++) {
           let moodleCriteria = rubricCriteria[i]
           let criteria = new Criteria({name: moodleCriteria.description, criteriaId: moodleCriteria.id, rubric: rubric})

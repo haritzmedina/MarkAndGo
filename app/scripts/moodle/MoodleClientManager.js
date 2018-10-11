@@ -3,7 +3,11 @@ const _ = require('lodash')
 
 class MoodleClientManager {
   constructor (moodleEndPoint) {
-    this.moodleEndpoint = moodleEndPoint
+    if (_.isNull(moodleEndPoint)) {
+      console.error('Moodle client manager requires a moodle endpoint')
+    } else {
+      this.moodleEndpoint = moodleEndPoint
+    }
   }
 
   init (callback) {
