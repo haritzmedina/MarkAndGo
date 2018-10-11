@@ -34,7 +34,7 @@ class TagManager {
 
   getGroupAnnotations (callback) {
     window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-      url: window.abwa.groupSelector.currentGroup.url,
+      url: window.abwa.groupSelector.currentGroup.links.html,
       order: 'desc'
     }, (err, annotations) => {
       if (err) {
@@ -243,7 +243,11 @@ class TagManager {
           // Update all annotations for current document/tag
           window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
             ['exam:isCriteriaOf:' + tagGroup.config.name],
-            ['exam:isCriteriaOf:' + tagGroup.config.name, 'exam:mark:' + event.target.dataset.mark],
+            [
+              'exam:isCriteriaOf:' + tagGroup.config.name,
+              'exam:mark:' + event.target.dataset.mark,
+              'exam:studentId:' + window.abwa.contentTypeManager.fileMetadata.studentId
+            ],
             (err, annotations) => {
               if (err) {
 

@@ -8,7 +8,7 @@ class RubricManager {
 
   init (callback) {
     window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-      url: window.abwa.groupSelector.currentGroup.url,
+      url: window.abwa.groupSelector.currentGroup.links.html,
       order: 'desc'
     }, (err, annotations) => {
       if (err) {
@@ -20,6 +20,10 @@ class RubricManager {
         }
       }
     })
+  }
+
+  destroy () {
+    console.debug('Destroyed rubric manager')
   }
 }
 

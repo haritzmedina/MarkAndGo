@@ -15,14 +15,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*/*"],
+      "matches": ["*://*/*", "file:///*/*"],
       "exclude_matches": ["*://*/grade/grading/*", "*://*/mod/assign/view.php*"],
       "js": ["scripts/contentScript.js"],
       "css": ["styles/contentScript.css"],
       "run_at": "document_start",
       "all_frames": false
-    },
-    {
+    }, {
       "matches": ["*://*/grade/grading/*", "*://*/mod/assign/view.php*"],
       "js": ["scripts/moodleContentScript.js"],
       "run_at": "document_end"
