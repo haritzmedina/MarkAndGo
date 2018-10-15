@@ -6,11 +6,12 @@ const _ = require('lodash')
 const LanguageUtils = require('../utils/LanguageUtils')
 
 class Rubric extends AnnotationGuide {
-  constructor ({moodleEndpoint, assignmentId, assignmentName, hypothesisGroup}) {
+  constructor ({moodleEndpoint, assignmentId, assignmentName, hypothesisGroup, cmid}) {
     super({name: assignmentName, hypothesisGroup})
     this.moodleEndpoint = moodleEndpoint
     this.assignmentId = assignmentId
     this.criterias = this.guideElements
+    this.cmid = cmid
   }
 
   toAnnotations () {
@@ -33,7 +34,7 @@ class Rubric extends AnnotationGuide {
       references: [],
       tags: ['exam:metadata'],
       target: [],
-      text: 'moodleEndpoint: ' + this.moodleEndpoint + '\nassignmentId: ' + this.assignmentId,
+      text: 'moodleEndpoint: ' + this.moodleEndpoint + '\nassignmentId: ' + this.assignmentId + '\ncmid: ' + this.cmid,
       uri: this.hypothesisGroup.links.html
     }
   }

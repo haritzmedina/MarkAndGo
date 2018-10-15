@@ -138,9 +138,11 @@ class MoodleContentScript {
     if (moodleRubrics.areas[0].activemethod === 'rubric') {
       let rubricCriteria = _.get(moodleRubrics, 'areas[0].definitions[0].rubric.rubric_criteria')
       let rubricAssignmentId = _.get(moodleRubrics, 'areas[0].definitions[0].id')
-      if (!_.isUndefined(rubricCriteria) && !_.isUndefined(rubricAssignmentId)) {
+      let rubricCmid = _.get(moodleRubrics, 'areas[0].cmid')
+      if (!_.isUndefined(rubricCriteria) && !_.isUndefined(rubricAssignmentId) && !_.isUndefined(rubricCmid)) {
         // Set assignment id
         rubric.assignmentId = moodleRubrics.areas[0].definitions[0].id
+        rubric.cmid = moodleRubrics.areas[0].cmid
         // Generate rubric model
         for (let i = 0; i < rubricCriteria.length; i++) {
           let moodleCriteria = rubricCriteria[i]
@@ -225,7 +227,7 @@ class MoodleContentScript {
               })
             } else {
               // TODO Handle group update
-              console.log('Group already exists, need to update')
+              console.debug('Group already exists, need to update')
               swal('The group ' + group.name + ' already exists', // TODO i18n
                 chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + group.url + '" target="_blank">' + group.url + '</a>',
                 'info')

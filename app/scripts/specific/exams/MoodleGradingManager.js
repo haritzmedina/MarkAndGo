@@ -25,7 +25,7 @@ class MoodleGradingManager {
   }
 
   markAnnotationCreateEventHandler () {
-    return (event) => {
+    return () => {
       // Get student id
       let studentId = window.abwa.contentTypeManager.fileMetadata.studentId
       // Get assignmentId from rubric

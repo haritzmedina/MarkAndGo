@@ -42,5 +42,17 @@
   "Dimensions": {
     "message": "Criteria",
     "description": "Sidebar dimensions header"
+  },
+  "errorDeletingHypothesisAnnotation": {
+    "message": "Error deleting hypothesis annotation, please try it again",
+    "description": "Message when fails deleting annotation comment"
+  },
+  "errorUpdatingAnnotationComment": {
+    "message": "Error updating annotation comment, please try it again.",
+    "description": "Message when fails updating annotation comment"
+  },
+  "backToWorkspace": {
+    "message": "Back to workspace",
+    "description": "Text for link to return to workspace in sidebar"
   }
 }
