@@ -18,6 +18,13 @@ class MoodleGradingManager {
         handler: this.markAnnotationCreateEventHandler()
       }
       this.events.marking.element.addEventListener(this.events.marking.event, this.events.marking.handler, false)
+      // Create event for comment update
+      this.events.comment = {
+        element: document,
+        event: Events.comment,
+        handler: this.markAnnotationCreateEventHandler()
+      }
+      this.events.comment.element.addEventListener(this.events.comment.event, this.events.comment.handler, false)
       if (_.isFunction(callback)) {
         callback()
       }
@@ -50,8 +57,9 @@ class MoodleGradingManager {
             } else {
               levelName = null
             }
+            let url = annotation.uri + '#mag:' + annotation.id
             let text = annotation.text
-            return {criteriaName, levelName, text}
+            return {criteriaName, levelName, text, url}
           })
           // Get for each criteria name and mark its corresponding criterionId and level from window.abwa.rubric
           let criterionAndLevels = this.getCriterionAndLevel(marks)
@@ -93,7 +101,16 @@ class MoodleGradingManager {
       let remark = mark.text
       criterionAndLevel.push({criterionId: criteria.criteriaId, levelid: level.levelId, remark})
     }
-    return criterionAndLevel
+    let resultingMarks = {}
+    // TODO Append links if shared
+    // Merge remarks with same criterionId and append remark
+    _.forEach(criterionAndLevel, (crit) => {
+      let remark = _.has(resultingMarks[crit.criterionId], 'remark') ? resultingMarks[crit.criterionId]['remark'] + '\n\n' + crit.remark : crit.remark
+      let levelid = crit.levelid
+      resultingMarks[crit.criterionId] = {remark: remark, levelid: levelid}
+    })
+    // Convert merge object to an array
+    return _.map(resultingMarks, (mark, key) => { return {criterionId: key, levelid: mark.levelid, remark: mark.remark} })
   }
 
   composeMoodleGradingData ({criterionAndLevels, userId, assignmentId}) {

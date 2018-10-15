@@ -574,7 +574,7 @@ class TextAnnotator extends ContentAnnotator {
                         // Dispatch updated annotations events
                         LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
                         LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
-
+                        LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
                         // Redraw annotations
                         DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
                         this.highlightAnnotation(annotation)
