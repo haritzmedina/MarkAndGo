@@ -28,14 +28,14 @@ describe('Popup test', function () {
         'target': [
           {
             'selector':
-            [
-              {
-                'exact': 'give universal access to',
-                'prefix': 've aiming to ',
-                'type': 'TextQuoteSelector',
-                'suffix': 'give universal'
-              }
-            ]
+              [
+                {
+                  'exact': 'give universal access to',
+                  'prefix': 've aiming to ',
+                  'type': 'TextQuoteSelector',
+                  'suffix': 'give universal'
+                }
+              ]
           }
         ],
         'body': {
