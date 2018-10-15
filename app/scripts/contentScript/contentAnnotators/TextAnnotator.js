@@ -11,6 +11,7 @@ const $ = require('jquery')
 require('jquery-contextmenu/dist/jquery.contextMenu')
 const _ = require('lodash')
 require('components-jqueryui')
+const swal = require('sweetalert2')
 
 const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
@@ -441,6 +442,9 @@ class TextAnnotator extends ContentAnnotator {
           let highestMark = _.last(group.tags).name
           highlightedElement.title = 'Rubric competence: ' + group.config.name + '\nMark: ' + tagInstance.name + ' of ' + highestMark
         }
+        if (!_.isEmpty(annotation.text)) {
+          highlightedElement.title += '\nFeedback: ' + annotation.text
+        }
       })
       // Create context menu event for highlighted elements
       this.createContextMenuForAnnotation(annotation)
@@ -493,8 +497,9 @@ class TextAnnotator extends ContentAnnotator {
       build: () => {
         // Create items for context menu
         let items = {}
-        // If current user is the same as author, allow to remove annotation
+        // If current user is the same as author, allow to remove annotation or add a comment
         if (this.currentUserProfile.userid === annotation.user) {
+          items['comment'] = {name: 'Comment'}
           items['delete'] = {name: 'Delete annotation'}
         }
         // Add validate item for SLR
@@ -517,8 +522,11 @@ class TextAnnotator extends ContentAnnotator {
                 } else {
                   if (!result.deleted) {
                     // Alert user error happened
-                    // TODO swal
-                    window.alert('Error deleting hypothesis annotation, please try it again')
+                    swal({
+                      type: 'error',
+                      title: 'Oops...',
+                      text: chrome.i18n.getMessage('errorDeletingHypothesisAnnotation')
+                    })
                   } else {
                     // Remove annotation from data model
                     _.remove(this.currentAnnotations, (currentAnnotation) => {
@@ -534,6 +542,46 @@ class TextAnnotator extends ContentAnnotator {
                     // Unhighlight annotation highlight elements
                     DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
                     console.debug('Deleted annotation ' + annotation.id)
+                  }
+                }
+              })
+            } else if (key === 'comment') {
+              // Close sidebar if opened
+              let isSidebarOpened = window.abwa.sidebar.isOpened()
+              this.closeSidebar()
+              // Open sweetalert
+              swal({
+                input: 'textarea',
+                inputPlaceholder: annotation.text || 'Type your feedback here...',
+                inputValue: annotation.text || '',
+                showCancelButton: true
+              }).then((result) => {
+                if (result.value) {
+                  // Update annotation
+                  annotation.text = result.value || ''
+                  window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
+                    annotation.id,
+                    annotation,
+                    (err, annotation) => {
+                      if (err) {
+                        // TODO Swal
+                        swal({
+                          type: 'error',
+                          title: 'Oops...',
+                          text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')
+                        })
+                      } else {
+                        // Dispatch updated annotations events
+                        LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
+                        LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
+
+                        // Redraw annotations
+                        DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
+                        this.highlightAnnotation(annotation)
+                      }
+                    })
+                  if (isSidebarOpened) {
+                    this.openSidebar()
                   }
                 }
               })
@@ -553,7 +601,8 @@ class TextAnnotator extends ContentAnnotator {
     return (event) => {
       // Check if something is selected
       if (document.getSelection().toString().length !== 0) {
-        if ($(event.target).parents('#abwaSidebarWrapper').toArray().length === 0) {
+        if ($(event.target).parents('#abwaSidebarWrapper').toArray().length === 0 &&
+          $(event.target).parents('.swal2-container').toArray().length === 0) {
           this.openSidebar()
         }
       } else {

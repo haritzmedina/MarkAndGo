@@ -1,5 +1,4 @@
 const _ = require('lodash')
-
 const ContentTypeManager = require('./ContentTypeManager')
 const ModeManager = require('./ModeManager')
 const Sidebar = require('./Sidebar')
@@ -9,7 +8,6 @@ const ConfigDecisionHelper = require('./ConfigDecisionHelper')
 const AnnotationBasedInitializer = require('./AnnotationBasedInitializer')
 const UserFilter = require('./UserFilter')
 const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
-const TextAnnotator = require('./contentAnnotators/TextAnnotator')
 const RolesManager = require('./RolesManager')
 const RubricManager = require('./RubricManager')
 
@@ -101,6 +99,7 @@ class ContentScriptManager {
   }
 
   reloadContentAnnotator (config, callback) {
+    const TextAnnotator = require('./contentAnnotators/TextAnnotator')
     // Destroy current content annotator
     this.destroyContentAnnotator()
     // Create a new content annotator for the current group
