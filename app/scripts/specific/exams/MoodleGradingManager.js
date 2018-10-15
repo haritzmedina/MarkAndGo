@@ -1,6 +1,7 @@
 const Events = require('../../contentScript/Events')
 const MoodleClientManager = require('../../moodle/MoodleClientManager')
 const _ = require('lodash')
+const swal = require('sweetalert2')
 
 class MoodleGradingManager {
   constructor () {
@@ -15,7 +16,23 @@ class MoodleGradingManager {
       this.events.marking = {
         element: document,
         event: Events.mark,
-        handler: this.markAnnotationCreateEventHandler()
+        handler: this.markAnnotationCreateEventHandler((err) => {
+          if (err) {
+            swal({
+              type: 'error',
+              title: 'Oops...',
+              text: err.message
+            })
+          } else {
+            swal({
+              position: 'top-end',
+              type: 'success',
+              title: 'Correctly marked', // TODO i18n
+              showConfirmButton: false,
+              timer: 1500
+            })
+          }
+        })
       }
       this.events.marking.element.addEventListener(this.events.marking.event, this.events.marking.handler, false)
       // Create event for comment update
@@ -31,7 +48,7 @@ class MoodleGradingManager {
     })
   }
 
-  markAnnotationCreateEventHandler () {
+  markAnnotationCreateEventHandler (callback) {
     return () => {
       // Get student id
       let studentId = window.abwa.contentTypeManager.fileMetadata.studentId
@@ -72,11 +89,13 @@ class MoodleGradingManager {
           // Update student grading in moodle
           this.moodleClientManager.moodleClient.updateStudentGradeWithRubric(moodleGradingData, (err) => {
             if (err) {
-              // TODO Swal
-              console.error('Error when grading')
+              if (_.isFunction(callback)) {
+                callback(new Error('Error when updating moodle'))
+              }
             } else {
-              // TODO Swal
-              console.log('Updated')
+              if (_.isFunction(callback)) {
+                callback(null)
+              }
             }
           })
         }
