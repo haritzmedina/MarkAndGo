@@ -2,6 +2,7 @@ const Events = require('../../contentScript/Events')
 const MoodleClientManager = require('../../moodle/MoodleClientManager')
 const _ = require('lodash')
 const swal = require('sweetalert2')
+const AnnotationUtils = require('../../utils/AnnotationUtils')
 
 class MoodleGradingManager {
   constructor () {
@@ -49,53 +50,65 @@ class MoodleGradingManager {
   }
 
   markAnnotationCreateEventHandler (callback) {
-    return () => {
-      // Get student id
-      let studentId = window.abwa.contentTypeManager.fileMetadata.studentId
-      // Get assignmentId from rubric
-      let assignmentId = window.abwa.rubricManager.rubric.assignmentId
-      // Get all annotations for user id
-      window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-        tags: 'exam:studentId:' + studentId,
-        group: window.abwa.groupSelector.currentGroup.id
-      }, (err, annotations) => {
+    return (event) => {
+      let annotation = null
+      if (_.has(event.detail, 'annotations[0]')) {
+        annotation = event.detail.annotations[0]
+      } else {
+        annotation = event.detail.annotation
+      }
+      this.updateAnnotationsFromOtherFiles(annotation, (err, annotations) => {
         if (err) {
 
         } else {
-          let marks = _.map(annotations, (annotation) => {
-            let criteriaName = _.find(annotation.tags, (tag) => {
-              return tag.includes('exam:isCriteriaOf:')
-            }).replace('exam:isCriteriaOf:', '')
-            let levelName = _.find(annotation.tags, (tag) => {
-              return tag.includes('exam:mark:')
-            })
-            if (levelName) {
-              levelName = levelName.replace('exam:mark:', '')
-            } else {
-              levelName = null
-            }
-            let url = annotation.uri + '#mag:' + annotation.id
-            let text = annotation.text
-            return {criteriaName, levelName, text, url}
-          })
-          // Get for each criteria name and mark its corresponding criterionId and level from window.abwa.rubric
-          let criterionAndLevels = this.getCriterionAndLevel(marks)
-          // Compose moodle data
-          let moodleGradingData = this.composeMoodleGradingData({
-            criterionAndLevels,
-            userId: studentId,
-            assignmentId: assignmentId
-          })
-          // Update student grading in moodle
-          this.moodleClientManager.moodleClient.updateStudentGradeWithRubric(moodleGradingData, (err) => {
+          // Get student id
+          let studentId = window.abwa.contentTypeManager.fileMetadata.studentId
+          // Get assignmentId from rubric
+          let assignmentId = window.abwa.rubricManager.rubric.assignmentId
+          // Get all annotations for user id
+          window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
+            tags: 'exam:studentId:' + studentId,
+            group: window.abwa.groupSelector.currentGroup.id
+          }, (err, annotations) => {
             if (err) {
-              if (_.isFunction(callback)) {
-                callback(new Error('Error when updating moodle'))
-              }
+
             } else {
-              if (_.isFunction(callback)) {
-                callback(null)
-              }
+              let marks = _.map(annotations, (annotation) => {
+                let criteriaName = _.find(annotation.tags, (tag) => {
+                  return tag.includes('exam:isCriteriaOf:')
+                }).replace('exam:isCriteriaOf:', '')
+                let levelName = _.find(annotation.tags, (tag) => {
+                  return tag.includes('exam:mark:')
+                })
+                if (levelName) {
+                  levelName = levelName.replace('exam:mark:', '')
+                } else {
+                  levelName = null
+                }
+                let url = annotation.uri + '#mag:' + annotation.id
+                let text = annotation.text
+                return {criteriaName, levelName, text, url}
+              })
+              // Get for each criteria name and mark its corresponding criterionId and level from window.abwa.rubric
+              let criterionAndLevels = this.getCriterionAndLevel(marks)
+              // Compose moodle data
+              let moodleGradingData = this.composeMoodleGradingData({
+                criterionAndLevels,
+                userId: studentId,
+                assignmentId: assignmentId
+              })
+              // Update student grading in moodle
+              this.moodleClientManager.moodleClient.updateStudentGradeWithRubric(moodleGradingData, (err) => {
+                if (err) {
+                  if (_.isFunction(callback)) {
+                    callback(new Error('Error when updating moodle'))
+                  }
+                } else {
+                  if (_.isFunction(callback)) {
+                    callback(null)
+                  }
+                }
+              })
             }
           })
         }
@@ -170,6 +183,45 @@ class MoodleGradingManager {
     if (_.isFunction(callback)) {
       callback()
     }
+  }
+
+  updateAnnotationsFromOtherFiles (annotation, callback) {
+    // Get all annotations with same criteria and student
+    let criteria = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
+    let studentId = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:studentId:')
+    let mark = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:mark:')
+    window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
+      tags: 'exam:studentId:' + studentId + ',' + 'exam:isCriteriaOf:' + criteria,
+      group: window.abwa.groupSelector.currentGroup.id
+    }, (err, oldTagsAnnotations) => {
+      if (err) {
+
+      } else {
+        let promises = []
+        for (let i = 0; i < oldTagsAnnotations.length; i++) {
+          let oldTagAnnotation = oldTagsAnnotations[i]
+          promises.push(new Promise((resolve, reject) => {
+            oldTagAnnotation.tags = ['exam:isCriteriaOf:' + criteria, 'exam:mark:' + mark, 'exam:studentId:' + studentId]
+            window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(oldTagAnnotation.id, oldTagAnnotation, (err, annotation) => {
+              if (err) {
+                reject(new Error('Unable to update annotation ' + oldTagAnnotation.id))
+              } else {
+                resolve(annotation)
+              }
+            })
+          }))
+        }
+        let annotations = []
+        Promise.all(promises).then((result) => {
+          // All annotations updated
+          annotations = result
+        }).finally((result) => {
+          if (_.isFunction(callback)) {
+            callback(null, annotations)
+          }
+        })
+      }
+    })
   }
 }
 
