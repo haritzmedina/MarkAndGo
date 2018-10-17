@@ -1,5 +1,6 @@
 const axios = require('axios')
 const _ = require('lodash')
+const ChromeStorage = require('../utils/ChromeStorage')
 
 const MoodleClient = require('../moodle/MoodleClient')
 
@@ -25,6 +26,28 @@ class MoodleBackgroundManager {
               }
             })
           }
+        } else if (request.cmd === 'setMoodleCustomEndpoint') {
+          let endpoint = request.data.endpoint
+          ChromeStorage.setData('moodleCustomEndpoint', {data: JSON.stringify(endpoint)}, ChromeStorage.sync, (err, data) => {
+            if (err) {
+              sendResponse({err: err})
+            } else {
+              sendResponse({endpoint: endpoint})
+            }
+          })
+        } else if (request.cmd === 'getMoodleCustomEndpoint') {
+          ChromeStorage.getData('moodleCustomEndpoint', ChromeStorage.sync, (err, endpoint) => {
+            if (err) {
+              sendResponse({err: err})
+            } else {
+              if (endpoint) {
+                let parsedEndpoint = JSON.parse(endpoint.data)
+                sendResponse({endpoint: parsedEndpoint || ''})
+              } else {
+                sendResponse({endpoint: ''})
+              }
+            }
+          })
         }
       }
     })

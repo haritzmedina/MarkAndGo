@@ -1,17 +1,49 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Options</title>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
   <link rel="stylesheet" type="text/css" href="../styles/options.css">
+
+  <title>Mark&Go configuration</title>
 </head>
 <body>
+<div class="container">
+  <!-- Header -->
+  <header></header>
 
-  <label>
-    <input type="checkbox" name="exampleOption" checked>
-    Example Option
-  </label>
+  <!-- Navigation bar -->
 
-  <script src="../scripts/options.js"></script>
+  <!-- Container -->
+  <div id="main-container" class="container">
+
+    <div class="jumbotron">
+      <img class="logo" src="../images/icon-38.png">
+      <h2 class="title">Mark&Go configuration</h2>
+
+      <div class="card">
+        <div class="card-header">Moodle</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="moodleEndpoint">Moodle custom API endpoint</label>
+            <input type="url" class="form-control" id="moodleEndpoint" placeholder="Enter custom moodle API endpoint">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">File formats</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="fileFormats">Which file formats must be treated as plain text files?</label>
+            <input type="text" class="form-control" id="fileFormats" placeholder="Enter a list of file extensions separated by comma: xml,js,csv">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../scripts/options.js"></script>
 </body>
 </html>

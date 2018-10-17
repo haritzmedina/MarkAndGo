@@ -1,5 +1,6 @@
 const _ = require('lodash')
 const URLUtils = require('../utils/URLUtils')
+const ChromeStorage = require('../utils/ChromeStorage')
 
 class MoodleDownloadManager {
   constructor () {
@@ -11,10 +12,35 @@ class MoodleDownloadManager {
       // Get required data to mark on moodle
       let hashParams = URLUtils.extractHashParamsFromUrl(downloadItem.url, ':')
       let studentId = hashParams['studentId']
-      // Save file metadata and data to mark on moodle
-      this.files[downloadItem.id] = {
-        url: URLUtils.retrieveMainUrl(downloadItem.url),
-        studentId: studentId
+      if (_.isString(studentId)) { // File is downloaded from moodle
+        // Save file metadata and data to mark on moodle
+        this.files[downloadItem.id] = {
+          url: URLUtils.retrieveMainUrl(downloadItem.url),
+          studentId: studentId
+        }
+      }
+    })
+
+    chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
+      if (this.files[downloadItem.id]) { // Only for files download from moodle
+        ChromeStorage.getData('fileFormats', ChromeStorage.sync, (err, fileExtensions) => {
+          if (err) {
+            suggest() // Suggest default
+          } else {
+            let fileExtensionArray = JSON.parse(fileExtensions.data).split(',')
+            let originalFilenameExtension = _.last(downloadItem.filename.split('.'))
+            let matchExtension = _.find(fileExtensionArray, (ext) => { return ext === originalFilenameExtension })
+            if (_.isString(matchExtension)) {
+              suggest({filename: downloadItem.filename + '.txt'})
+            } else {
+              suggest()
+            }
+          }
+        })
+        // Async suggestion
+        return true
+      } else {
+        return false
       }
     })
 
@@ -40,6 +66,25 @@ class MoodleDownloadManager {
             })
             sendResponse({file: file})
           }
+        } else if (request.cmd === 'setPlainTextFileExtension') {
+          // TODO
+          ChromeStorage.setData('fileFormats', {data: JSON.stringify(request.data.fileExtensions)}, ChromeStorage.sync, () => {
+            sendResponse({err: null})
+          })
+        } else if (request.cmd === 'getPlainTextFileExtension') {
+          // TODO
+          ChromeStorage.getData('fileFormats', ChromeStorage.sync, (err, fileExtensions) => {
+            if (err) {
+              sendResponse({err: err})
+            } else {
+              if (fileExtensions) {
+                let parsedFileExtensions = JSON.parse(fileExtensions.data)
+                sendResponse({fileExtensions: parsedFileExtensions || ''})
+              } else {
+                sendResponse({fileExtensions: ''})
+              }
+            }
+          })
         }
       }
     })
