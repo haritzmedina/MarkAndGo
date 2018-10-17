@@ -37,7 +37,7 @@ class MoodleBackgroundManager {
         let parser = new window.DOMParser()
         let docPreferences = parser.parseFromString(response.data, 'text/html')
         let tokenLinkElement = docPreferences.querySelector('a[href*="managetoken.php"]')
-        if (tokenLinkElement) {
+        if (_.isElement(tokenLinkElement)) {
           let manageToken = tokenLinkElement.href
           // Open managetokens page
           axios.get(manageToken)

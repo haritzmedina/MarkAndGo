@@ -1,3 +1,4 @@
+const _ = require('lodash')
 const MoodleGradingAugmentation = require('./MoodleGradingAugmentation')
 const MoodleGraderAugmentation = require('./MoodleGraderAugmentation')
 
@@ -10,7 +11,9 @@ class MoodleAugmentation {
     } else if ((new URL(window.location)).searchParams.get('action') === 'grading') {
       this.augmentator = new MoodleGradingAugmentation()
     }
-    this.augmentator.init()
+    if (_.isObject(this.augmentator)) {
+      this.augmentator.init()
+    }
   }
 }
 

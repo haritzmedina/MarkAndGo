@@ -49,7 +49,7 @@ class MoodleClient {
     let settings = {
       'async': true,
       'crossDomain': true,
-      'url': 'https://moodle.haritzmedina.com/webservice/rest/server.php?',
+      'url': this.endpoint + '/webservice/rest/server.php?',
       'method': 'POST',
       'headers': {
         'Cache-Control': 'no-cache',

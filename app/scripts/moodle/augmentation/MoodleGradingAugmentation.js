@@ -5,6 +5,10 @@ class MoodleGradingAugmentation {
     let gradingTable = document.querySelector('.gradingtable')
     let tableBody = gradingTable.querySelector('tbody')
     let rows = tableBody.querySelectorAll(':scope > tr')
+    // In moodle 3.1 are added some empty rows which are hidden
+    rows = _.filter(rows, (row) => {
+      return !row.classList.contains('emptyrow')
+    })
     _.forEach(rows, (row) => {
       // Get student id
       let studentId = (new URL(row.querySelector('a[href*="/user/view.php"').href)).searchParams.get('id')

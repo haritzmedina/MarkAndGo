@@ -15,84 +15,57 @@ class MoodleContentScript {
     this.moodleEndpoint = null
     this.assignmentName = null
     this.hypothesisClientManager = null
+    this.moodleVersion = null
   }
 
   init (callback) {
     this.showToolIsConfiguring()
     this.initHypothesisClient(() => {
-      // Retrieve assignment information and moodle endpoint
-      if (window.location.href.includes('mod/assign/view')) {
-        this.assignmentId = (new URL(window.location)).searchParams.get('id')
-        this.moodleEndpoint = _.split(window.location.href, 'mod/assign/view')[0]
-        let assignmentElement = document.querySelector('.breadcrumb')
-        if (_.isElement(assignmentElement)) {
-          assignmentElement = assignmentElement.querySelector('a[href*="mod/assign"]')
-          this.assignmentName = assignmentElement.innerText
-        } else {
-          assignmentElement = document.querySelector('[data-region="assignment-info"]')
-          if (_.isElement(assignmentElement)) {
-            this.assignmentName = assignmentElement.querySelector('[href*="mod/assign"]').innerText.split(':')[1].trim()
-          } else {
-            swal('Oops!', // TODO i18n
-              'There was a problem when retrieving task information from moodle. Make sure that you are in the main page of the assignment. <br/>' +
-              'If the error continues, please <a href="https://github.com/haritzmedina/markandgo/issues" target="_blank">contact administrator</a>.',
-              'error') // Show to the user the error
-          }
-        }
-      } else if (window.location.href.includes('grade/grading/')) {
-        let assignmentElement = document.querySelector('a[href*="mod/assign"]')
-        let assignmentURL = assignmentElement.href
-        this.assignmentName = assignmentElement.innerText
-        this.assignmentId = (new URL(assignmentURL)).searchParams.get('id')
-        this.moodleEndpoint = _.split(window.location.href, 'grade/grading/')[0]
-      } else {
-        swal('Oops!',
-          'This is not moodle rubrics or assignment webpage', // TODO i18n
-          'error') // Notify error to user
-        console.error('This is not moodle rubrics or assignment webpage')
-        if (_.isFunction(callback)) {
-          callback()
-        }
-      }
-
-      // Retrieve moodle client
-      this.moodleClientManager = new MoodleClientManager(this.moodleEndpoint)
-      this.moodleClientManager.init((err) => {
+      // It will retrieve
+      this.scrapAssignmentData((err, assignmentData) => {
         if (err) {
-          // TODO Unable to init moodle client manager
-          // TODO Swal
-        } else {
-          this.moodleClientManager.moodleClient.getRubric(this.assignmentId, (err, rubrics) => {
-            if (err) {
 
+        } else {
+          // Retrieve moodle client
+          this.moodleClientManager = new MoodleClientManager(this.moodleEndpoint)
+          this.moodleClientManager.init((err) => {
+            if (err) {
+              // TODO Unable to init moodle client manager
+              // TODO Swal
             } else {
-              console.log(rubrics)
-              this.constructRubricsModel({moodleRubrics: rubrics,
-                callback: (err, rubric) => {
-                  if (_.isFunction(callback)) {
-                    if (err) {
-                      // TODO Show error to user
-                      callback(err)
-                    } else {
-                      // Create hypothesis group with annotations
-                      this.generateHypothesisGroup({
-                        rubric,
-                        callback: (err) => {
-                          if (_.isFunction(callback)) {
-                            if (err) {
-                              // TODO Show error to user
-                              callback(err)
-                            } else {
-                              swal('Correctly configured', // TODO i18n
-                                chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + rubric.hypothesisGroup.links.html + '" target="_blank">' + rubric.hypothesisGroup.links.html + '</a>',
-                                'success')
-                              callback(null)
+              this.moodleClientManager.moodleClient.getRubric(this.assignmentId, (err, rubrics) => {
+                if (err) {
+
+                } else {
+                  console.log(rubrics)
+                  this.constructRubricsModel({moodleRubrics: rubrics,
+                    callback: (err, rubric) => {
+                      if (_.isFunction(callback)) {
+                        if (err) {
+                          // TODO Show error to user
+                          callback(err)
+                        } else {
+                          // Create hypothesis group with annotations
+                          this.generateHypothesisGroup({
+                            rubric,
+                            callback: (err) => {
+                              if (_.isFunction(callback)) {
+                                if (err) {
+                                  // TODO Show error to user
+                                  callback(err)
+                                } else {
+                                  swal('Correctly configured', // TODO i18n
+                                    chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + rubric.hypothesisGroup.links.html + '" target="_blank">' + rubric.hypothesisGroup.links.html + '</a>',
+                                    'success')
+                                  callback(null)
+                                }
+                              }
                             }
-                          }
+                          })
                         }
-                      })
+                      }
                     }
-                  }
+                  })
                 }
               })
             }
@@ -127,6 +100,72 @@ class MoodleContentScript {
         }
       })
     })
+  }
+
+  scrapAssignmentData (callback) {
+    // Retrieve assignment information and moodle endpoint
+    if (window.location.href.includes('mod/assign/view')) {
+      this.assignmentId = (new URL(window.location)).searchParams.get('id')
+      this.moodleEndpoint = _.split(window.location.href, 'mod/assign/view')[0]
+      let assignmentElement = document.querySelector('ol.breadcrumb')
+      if (_.isElement(assignmentElement)) {
+        assignmentElement = assignmentElement.querySelector('a[href*="mod/assign"]')
+        if (assignmentElement) {
+          this.moodleVersion = '35'
+        } else {
+          // Moodle wrong page error
+          this.showMoodleWrongPageError()
+          if (_.isFunction(callback)) {
+            callback(new Error('MoodleWrongPage'))
+          }
+        }
+      } else {
+        assignmentElement = document.querySelector('ul.breadcrumb')
+        if (_.isElement(assignmentElement)) {
+          assignmentElement = assignmentElement.querySelector('a[href*="mod/assign"]')
+          if (_.isElement(assignmentElement)) {
+            this.moodleVersion = '31'
+          } else {
+            // Moodle wrong page error
+            this.showMoodleWrongPageError()
+            if (_.isFunction(callback)) {
+              callback(new Error('MoodleWrongPage'))
+            }
+          }
+        } else {
+          // Moodle wrong page error
+          this.showMoodleWrongPageError()
+          if (_.isFunction(callback)) {
+            callback(new Error('MoodleWrongPage'))
+          }
+        }
+      }
+      // Get assignment name
+      if (this.moodleVersion === '31' || this.moodleVersion === '35') {
+        this.assignmentName = assignmentElement.innerText
+      }
+      // Callback with data
+      if (_.isFunction(callback)) {
+        callback(null, {assignmentName: this.assignmentName, assignmentId: this.assignmentId, moodleVersion: this.moodleVersion})
+      }
+    } else if (window.location.href.includes('grade/grading/')) {
+      let assignmentElement = document.querySelector('a[href*="mod/assign"]')
+      let assignmentURL = assignmentElement.href
+      this.assignmentName = assignmentElement.innerText
+      this.assignmentId = (new URL(assignmentURL)).searchParams.get('id')
+      this.moodleEndpoint = _.split(window.location.href, 'grade/grading/')[0]
+      // Callback with data
+      if (_.isFunction(callback)) {
+        callback(null, {assignmentName: this.assignmentName, assignmentId: this.assignmentId, moodleVersion: this.moodleVersion})
+      }
+    } else {
+      swal('Oops!',
+        'This is not moodle rubrics or assignment webpage', // TODO i18n
+        'error') // Notify error to user
+      if (_.isFunction(callback)) {
+        callback(new Error('This is not moodle rubrics or assignment webpage'))
+      }
+    }
   }
 
   constructRubricsModel ({moodleRubrics, callback}) {
@@ -241,7 +280,7 @@ class MoodleContentScript {
 
   createHypothesisGroup (name, callback) {
     this.hypothesisClientManager.hypothesisClient.createNewGroup({
-      name: name, description: 'A Mark&Go generated group to mark the assignment in moodle called' + name}, (err, group) => {
+      name: name, description: 'A Mark&Go generated group to mark the assignment in moodle called ' + name}, (err, group) => {
       if (err) {
         if (_.isFunction(callback)) {
           callback(err)
@@ -283,6 +322,13 @@ class MoodleContentScript {
       text: 'teacherId: ' + teacherId,
       uri: hypothesisGroup.links.html // Group url
     }
+  }
+
+  showMoodleWrongPageError () {
+    swal('Oops!', // TODO i18n
+      'There was a problem when retrieving task information from moodle. Make sure that you are in the main page of the assignment. <br/>' +
+      'If the error continues, please <a href="https://github.com/haritzmedina/markandgo/issues" target="_blank">contact administrator</a>.',
+      'error') // Show to the user the error
   }
 }
 
