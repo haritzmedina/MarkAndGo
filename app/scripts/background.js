@@ -19,6 +19,7 @@ const DoiManager = require('./background/DoiManager')
 const Popup = require('./popup/Popup')
 const MoodleDownloadManager = require('./background/MoodleDownloadManager')
 const MoodleBackgroundManager = require('./background/MoodleBackgroundManager')
+const TourManager = require('./background/TourManager')
 
 const _ = require('lodash')
 
@@ -48,6 +49,10 @@ class Background {
     // Initialize moodle background manager
     this.moodleBackgroundManager = new MoodleBackgroundManager()
     this.moodleBackgroundManager.init()
+
+    // Initialize tour manager
+    this.tourManager = new TourManager()
+    this.tourManager.init()
 
     // Initialize page_action event handler
     chrome.pageAction.onClicked.addListener((tab) => {
