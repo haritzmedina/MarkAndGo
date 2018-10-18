@@ -1,0 +1,136 @@
+const _ = require('lodash')
+
+let swal = null
+if (document && document.head) {
+  swal = require('sweetalert2')
+}
+
+class Alerts {
+  static confirmAlert ({alertType = Alerts.alertType.info, title = '', text = '', callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        title: title,
+        html: text,
+        type: alertType,
+        showCancelButton: true
+      }).then((result) => {
+        if (result.value) {
+          if (_.isFunction(callback)) {
+            callback(null, result.value)
+          }
+        }
+      })
+    }
+  }
+
+  static infoAlert ({text = chrome.i18n.getMessage('expectedInfoMessageNotFound'), title = 'Info', callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        type: Alerts.alertType.info,
+        title: title,
+        html: text
+      })
+    }
+  }
+
+  static errorAlert ({text = chrome.i18n.getMessage('unexpectedError'), title = 'Oops...', callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        type: Alerts.alertType.error,
+        title: title,
+        html: text
+      })
+    }
+  }
+
+  static successAlert ({text = 'Your process is correctly done', title = 'Great!', callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        type: Alerts.alertType.success,
+        title: title,
+        html: text
+      })
+    }
+  }
+
+  static loadingAlert ({text = 'If it takes too much time, please reload the page and try again.', position = 'top-end', title = 'Working on something, please be patient', confirmButton = false, callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        position: position,
+        title: title,
+        html: text,
+        showConfirmButton: confirmButton,
+        onOpen: () => {
+          swal.showLoading()
+        }
+      })
+    }
+  }
+
+  static inputTextAlert ({input = 'text', inputPlaceholder = '', inputValue = '', showCancelButton = true, callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        input: input,
+        inputPlaceholder: inputPlaceholder,
+        inputValue: inputValue,
+        showCancelButton: showCancelButton
+      }).then((result) => {
+        if (result.value) {
+          if (_.isFunction(callback)) {
+            callback(null, result.value)
+          }
+        }
+      })
+    }
+  }
+
+  static tryToLoadSwal () {
+    if (_.isNull(swal)) {
+      try {
+        swal = require('sweetalert2')
+      } catch (e) {
+        swal = null
+      }
+    }
+  }
+}
+
+Alerts.alertType = {
+  warning: 'warning',
+  error: 'error',
+  success: 'success',
+  info: 'info',
+  question: 'question'
+}
+
+module.exports = Alerts

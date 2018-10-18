@@ -14,8 +14,7 @@ class MoodleClientManager {
     // Retrieve token from moodle
     chrome.runtime.sendMessage({scope: 'moodle', cmd: 'getTokenForEndpoint', data: {endpoint: this.moodleEndpoint}}, (result) => {
       if (result.err) {
-        // TODO Swal err
-        console.error(result.err)
+        callback(new Error('Unable to retrieve valid token'))
       } else {
         this.token = result.token
         this.moodleClient = new MoodleClient(this.moodleEndpoint, this.token)
