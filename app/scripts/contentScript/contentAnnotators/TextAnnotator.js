@@ -235,6 +235,13 @@ class TextAnnotator extends ContentAnnotator {
   }
 
   static constructAnnotation (selectors, tags) {
+    // Check if selectors exist, if then create a target for annotation, in other case the annotation will be a page annotation
+    let target = []
+    if (_.isObject(selectors)) {
+      target.push({
+        selector: selectors
+      })
+    }
     let data = {
       group: window.abwa.groupSelector.currentGroup.id,
       permissions: {
@@ -242,9 +249,7 @@ class TextAnnotator extends ContentAnnotator {
       },
       references: [],
       tags: tags,
-      target: [{
-        selector: selectors
-      }],
+      target: target,
       text: '',
       uri: window.abwa.contentTypeManager.getDocumentURIToSaveInHypothesis()
     }

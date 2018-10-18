@@ -54,5 +54,11 @@
   "backToWorkspace": {
     "message": "Back to workspace",
     "description": "Text for link to return to workspace in sidebar"
+  },
+  "noEvidencesFoundForMarkingTitle": {
+    "message": "No evidences found for this mark"
+  },
+  "noEvidencesFoundForMarkingText": {
+    "message": "You haven't annotated any evidence for this mark, would you like to grade this student with $1?"
   }
 }

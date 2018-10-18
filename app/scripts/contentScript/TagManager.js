@@ -241,13 +241,14 @@ class TagManager {
         },
         buttonHandler: (event) => {
           // Update all annotations for current document/tag
+          let oldTagList = ['exam:isCriteriaOf:' + tagGroup.config.name]
+          let newTagList = [
+            'exam:isCriteriaOf:' + tagGroup.config.name,
+            'exam:mark:' + event.target.dataset.mark,
+            'exam:studentId:' + window.abwa.contentTypeManager.fileMetadata.studentId
+          ]
           window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
-            ['exam:isCriteriaOf:' + tagGroup.config.name],
-            [
-              'exam:isCriteriaOf:' + tagGroup.config.name,
-              'exam:mark:' + event.target.dataset.mark,
-              'exam:studentId:' + window.abwa.contentTypeManager.fileMetadata.studentId
-            ],
+            oldTagList, newTagList,
             (err, annotations) => {
               if (err) {
 
@@ -262,8 +263,31 @@ class TagManager {
                     window.abwa.contentAnnotator.redrawAnnotations()
                   }
                 })
-                // Send event of mark
-                LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
+                // If no annotations are found, create one for in page level with selected tags
+                if (annotations.length === 0) {
+                  const swal = require('sweetalert2')
+                  swal({
+                    title: chrome.i18n.getMessage('noEvidencesFoundForMarkingTitle'),
+                    text: chrome.i18n.getMessage('noEvidencesFoundForMarkingText', event.target.dataset.mark),
+                    type: 'warning',
+                    showCancelButton: true
+                  }).then((result) => {
+                    if (result.value) {
+                      const TextAnnotator = require('./contentAnnotators/TextAnnotator')
+                      window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(TextAnnotator.constructAnnotation(null, newTagList), (err, annotation) => {
+                        if (err) {
+                          // TODO Swal
+                        } else {
+                          // Send event of mark
+                          LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
+                        }
+                      })
+                    }
+                  })
+                } else {
+                  // Send event of mark
+                  LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
+                }
               }
             })
         }
