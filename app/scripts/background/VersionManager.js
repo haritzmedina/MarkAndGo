@@ -12,7 +12,10 @@ class VersionManager {
 
     ChromeStorage.getData('version.latest', ChromeStorage.local, (err, previousVersion) => {
       if (err) {
+        // Save not to show again first time message
+        ChromeStorage.setData('version.latest', {version: currentVersion}, ChromeStorage.local, () => {
 
+        })
       } else {
         if (previousVersion && previousVersion.version) {
           if (compareVersions(currentVersion, previousVersion.version)) {
