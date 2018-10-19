@@ -2,6 +2,7 @@ const _ = require('lodash')
 const Events = require('./Events')
 const URLUtils = require('../utils/URLUtils')
 const LanguageUtils = require('../utils/LanguageUtils')
+const Alerts = require('../utils/Alerts')
 
 const URL_CHANGE_INTERVAL_IN_SECONDS = 1
 
@@ -45,7 +46,10 @@ class ContentTypeManager {
               // Check in moodle download manager if the file exists
               chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: window.PDFViewerApplication.url}}, (fileMetadata) => {
                 if (_.isEmpty(fileMetadata)) {
-                  // TODO Warn user document is not from moodle
+                  // Warn user document is not from moodle
+                  Alerts.warningAlert({
+                    text: 'Try to download the file again from moodle and if the error continues check <a href="https://github.com/haritzmedina/MarkAndGo/wiki/Most-common-errors-in-Mark&Go#file-is-not-from-moodle">this</a>.',
+                    title: 'This file is not downloaded from moodle'})
                   this.documentURL = window.PDFViewerApplication.url
                 } else {
                   this.fileMetadata = fileMetadata.file

@@ -1,7 +1,7 @@
 const Events = require('../../contentScript/Events')
 const MoodleClientManager = require('../../moodle/MoodleClientManager')
 const _ = require('lodash')
-const swal = require('sweetalert2')
+const Alerts = require('../../utils/Alerts')
 const AnnotationUtils = require('../../utils/AnnotationUtils')
 
 class MoodleGradingManager {
@@ -19,19 +19,9 @@ class MoodleGradingManager {
         event: Events.mark,
         handler: this.markAnnotationCreateEventHandler((err) => {
           if (err) {
-            swal({
-              type: 'error',
-              title: 'Oops...',
-              text: err.message
-            })
+            Alerts.errorAlert({text: err.message})
           } else {
-            swal({
-              position: 'top-end',
-              type: 'success',
-              title: 'Correctly marked', // TODO i18n
-              showConfirmButton: false,
-              timer: 1500
-            })
+            Alerts.temporalAlert({text: 'The mark is updated in moodle', title: 'Correctly marked', type: Alerts.alertType.success})
           }
         })
       }

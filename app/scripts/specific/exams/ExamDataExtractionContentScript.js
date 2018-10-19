@@ -71,6 +71,9 @@ class ExamDataExtractionContentScript {
     // TODO Destroy managers
     try {
       if (window.abwa.specific) {
+        if (window.abwa.specific.moodleGradingManager) {
+          window.abwa.specific.moodleGradingManager.destroy()
+        }
         if (window.abwa.specific.backToWorkspace) {
           window.abwa.specific.backToWorkspace.destroy()
         }

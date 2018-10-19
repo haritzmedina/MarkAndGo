@@ -106,7 +106,7 @@ class ContentScriptManager {
     if (config.contentAnnotator === 'text') {
       window.abwa.contentAnnotator = new TextAnnotator(config)
     } else {
-      window.abwa.contentAnnotator = new TextAnnotator(config) // TODO Depending on the type of annotator
+      window.abwa.contentAnnotator = new TextAnnotator(config)
     }
     window.abwa.contentAnnotator.init(callback)
   }
@@ -115,7 +115,7 @@ class ContentScriptManager {
     // Destroy current tag manager
     this.destroyTagsManager()
     // Create a new tag manager for the current group
-    window.abwa.tagManager = new TagManager(config.namespace, config.tags) // TODO Depending on the type of annotator
+    window.abwa.tagManager = new TagManager(config.namespace, config.tags)
     window.abwa.tagManager.init(callback)
   }
 

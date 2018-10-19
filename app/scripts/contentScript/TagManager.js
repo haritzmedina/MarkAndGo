@@ -130,7 +130,7 @@ class TagManager {
     for (let i = 0; i < this.model.groupAnnotations.length; i++) {
       let groupTag = this.retrieveTagNameByPrefix(this.model.groupAnnotations[i].tags, (this.model.namespace + ':' + this.model.config.grouped.group))
       if (groupTag) {
-        tagGroupsAnnotations[groupTag] = new TagGroup({name: groupTag, namespace: this.model.namespace, group: this.model.config.grouped.group})
+        tagGroupsAnnotations[groupTag] = new TagGroup({name: groupTag, namespace: this.model.namespace, group: this.model.config.grouped.group, options: jsYaml.load(this.model.groupAnnotations[i].text)})
       }
     }
     let groups = _.sortBy(_.keys(tagGroupsAnnotations))
@@ -212,6 +212,7 @@ class TagManager {
 
   createTagsButtonsForEvidencing (callback) {
     let arrayOfTagGroups = _.values(this.model.currentTags)
+    arrayOfTagGroups = _.orderBy(arrayOfTagGroups, 'config.options.criteriaId')
     for (let i = 0; i < arrayOfTagGroups.length; i++) {
       let tagGroup = arrayOfTagGroups[i]
       let button = this.createButton({
@@ -230,6 +231,7 @@ class TagManager {
 
   createTagsButtonsForMarking (callback) {
     let arrayOfTagGroups = _.values(this.model.currentTags)
+    arrayOfTagGroups = _.orderBy(arrayOfTagGroups, 'config.options.criteriaId')
     for (let i = 0; i < arrayOfTagGroups.length; i++) {
       let tagGroup = arrayOfTagGroups[i]
       let panel = this.createGroupedButtons({

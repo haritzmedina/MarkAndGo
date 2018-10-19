@@ -73,6 +73,24 @@ class Alerts {
     }
   }
 
+  static temporalAlert ({text = 'It is done', title = 'Finished', type = Alerts.alertType.info, timer = 1500, position = 'top-end', callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        position: position,
+        type: type,
+        title: title, // TODO i18n
+        html: text,
+        showConfirmButton: false,
+        timer: timer
+      })
+    }
+  }
+
   static loadingAlert ({text = 'If it takes too much time, please reload the page and try again.', position = 'top-end', title = 'Working on something, please be patient', confirmButton = false, callback}) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
@@ -121,6 +139,21 @@ class Alerts {
       } catch (e) {
         swal = null
       }
+    }
+  }
+
+  static warningAlert ({text = 'Something that you need to worry about happened. ' + chrome.i18n.getMessage('ContactAdministrator'), title = 'Warning', callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        type: Alerts.alertType.warning,
+        title: title,
+        html: text
+      })
     }
   }
 }

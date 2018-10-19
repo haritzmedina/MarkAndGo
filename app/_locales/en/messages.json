@@ -83,6 +83,6 @@
     "message": "There was a problem while relating the tool with moodle. Please reload the page and try it again."
   },
   "ContactAdministrator": {
-    "message": "If the error continues, please <a href='https://github.com/haritzmedina/markandgo/issues' target='_blank'>contact administrator</a>."
+    "message": "If the error continues, please <a href='https://github.com/haritzmedina/markandgo/issues' target='_blank'>contact to Mark&Go developers.</a>."
   }
 }

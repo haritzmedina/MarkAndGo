@@ -1,5 +1,6 @@
 const Rubric = require('../model/Rubric')
 const _ = require('lodash')
+const Alerts = require('../utils/Alerts')
 
 class RubricManager {
   constructor (config) {
@@ -12,7 +13,7 @@ class RubricManager {
       order: 'desc'
     }, (err, annotations) => {
       if (err) {
-        window.alert('Unable to retrieve document annotations') // TODO Swal
+        Alerts.warningAlert({text: 'Unable to retrieve document annotations'}) // TODO i18n
       } else {
         this.rubric = Rubric.fromAnnotations(annotations)
         if (_.isFunction(callback)) {
