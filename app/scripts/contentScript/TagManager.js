@@ -7,6 +7,7 @@ const ColorUtils = require('../utils/ColorUtils')
 const Events = require('./Events')
 const Tag = require('./Tag')
 const TagGroup = require('./TagGroup')
+const Alerts = require('../utils/Alerts')
 
 class TagManager {
   constructor (namespace, config) {
@@ -38,7 +39,7 @@ class TagManager {
       order: 'desc'
     }, (err, annotations) => {
       if (err) {
-        window.alert('Unable to retrieve document annotations') // TODO Swal
+        Alerts.errorAlert({text: 'Unable to construct the highlighter. Please reload webpage and try it again.'})
       } else {
         // Retrieve tags which has the namespace
         annotations = _.filter(annotations, (annotation) => {
@@ -254,7 +255,7 @@ class TagManager {
 
               } else {
                 //
-                console.debug('All annotations with criteria ' + tagGroup.config.name + ' has mark ' + '')
+                console.debug('All annotations with criteria ' + tagGroup.config.name + ' has mark ' + event.target.dataset.mark)
                 // Reload all annotations
                 window.abwa.contentAnnotator.updateAllAnnotations((err, annotations) => {
                   if (err) {
@@ -265,23 +266,26 @@ class TagManager {
                 })
                 // If no annotations are found, create one for in page level with selected tags
                 if (annotations.length === 0) {
-                  const swal = require('sweetalert2')
-                  swal({
+                  Alerts.confirmAlert({
                     title: chrome.i18n.getMessage('noEvidencesFoundForMarkingTitle'),
                     text: chrome.i18n.getMessage('noEvidencesFoundForMarkingText', event.target.dataset.mark),
-                    type: 'warning',
-                    showCancelButton: true
-                  }).then((result) => {
-                    if (result.value) {
-                      const TextAnnotator = require('./contentAnnotators/TextAnnotator')
-                      window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(TextAnnotator.constructAnnotation(null, newTagList), (err, annotation) => {
-                        if (err) {
-                          // TODO Swal
-                        } else {
-                          // Send event of mark
-                          LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
-                        }
-                      })
+                    alertType: Alerts.alertType.warning,
+                    callback: (err) => {
+                      if (err) {
+                        // Manage error
+                        window.alert('Unable to create alert for: noEvidencesFoundForMarking. Reload the page, and if the error continues please contact administrator.')
+                      } else {
+                        const TextAnnotator = require('./contentAnnotators/TextAnnotator')
+                        window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(TextAnnotator.constructAnnotation(null, newTagList), (err, annotation) => {
+                          if (err) {
+                            Alerts.errorAlert({text: err.message})
+                          } else {
+                            annotations.push(annotation)
+                            // Send event of mark
+                            LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
+                          }
+                        })
+                      }
                     }
                   })
                 } else {
