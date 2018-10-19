@@ -67,12 +67,12 @@ class MoodleDownloadManager {
             sendResponse({file: file})
           }
         } else if (request.cmd === 'setPlainTextFileExtension') {
-          // TODO
+          // Save file formats
           ChromeStorage.setData('fileFormats', {data: JSON.stringify(request.data.fileExtensions)}, ChromeStorage.sync, () => {
             sendResponse({err: null})
           })
         } else if (request.cmd === 'getPlainTextFileExtension') {
-          // TODO
+          // Retrieve from chrome storage file formats and return to user
           ChromeStorage.getData('fileFormats', ChromeStorage.sync, (err, fileExtensions) => {
             if (err) {
               sendResponse({err: err})
