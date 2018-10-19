@@ -71,29 +71,14 @@ class ExamDataExtractionContentScript {
     // TODO Destroy managers
     try {
       if (window.abwa.specific) {
-        if (window.abwa.specific.mappingStudyManager) {
-          window.abwa.specific.mappingStudyManager.destroy()
-        }
-        if (window.abwa.specific.primaryStudySheetManager) {
-          window.abwa.specific.primaryStudySheetManager.destroy()
-        }
-        if (window.abwa.specific.backToSpreadsheetLink) {
-          window.abwa.specific.backToSpreadsheetLink.destroy()
-        }
-        if (window.abwa.specific.createAnnotationManager) {
-          window.abwa.specific.createAnnotationManager.destroy()
-        }
-        if (window.abwa.specific.deleteAnnotationManager) {
-          window.abwa.specific.deleteAnnotationManager.destroy()
+        if (window.abwa.specific.backToWorkspace) {
+          window.abwa.specific.backToWorkspace.destroy()
         }
         if (window.abwa.specific.studentLogging) {
           window.abwa.specific.studentLogging.destroy()
         }
         if (window.abwa.specific.screenshots) {
           window.abwa.specific.screenshots.destroy()
-        }
-        if (window.abwa.specific.navigationRing) {
-          window.abwa.specific.navigationRing.destroy()
         }
       }
     } catch (e) {
