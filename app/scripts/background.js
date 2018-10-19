@@ -1,8 +1,13 @@
 // Enable chromereload by uncommenting this line:
 import 'chromereload/devonly'
 
+const VersionManager = require('./background/VersionManager')
+
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('previousVersion', details.previousVersion)
+  // Version manager
+  let versionManager = new VersionManager()
+  versionManager.init()
 })
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
