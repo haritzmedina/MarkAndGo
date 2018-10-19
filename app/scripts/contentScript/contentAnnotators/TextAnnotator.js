@@ -11,7 +11,7 @@ const $ = require('jquery')
 require('jquery-contextmenu/dist/jquery.contextMenu')
 const _ = require('lodash')
 require('components-jqueryui')
-const swal = require('sweetalert2')
+const Alerts = require('../../utils/Alerts')
 
 const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
@@ -174,12 +174,12 @@ class TextAnnotator extends ContentAnnotator {
       let selectors = []
       // If selection is empty, return null
       if (document.getSelection().toString().length === 0) {
-        window.alert('Nothing to highlight, current selection is empty') // TODO change by swal
+        Alerts.infoAlert({text: chrome.i18n.getMessage('CurrentSelectionEmpty')})
         return
       }
       // If selection is child of sidebar, return null
       if ($(document.getSelection().anchorNode).parents('#annotatorSidebarWrapper').toArray().length !== 0) {
-        window.alert('The selected content cannot be highlighted, is not part of the document') // TODO change by swal
+        Alerts.infoAlert({text: chrome.i18n.getMessage('CurrentSelectionNotAnnotable')})
         return
       }
       let range = document.getSelection().getRangeAt(0)
@@ -527,11 +527,7 @@ class TextAnnotator extends ContentAnnotator {
                 } else {
                   if (!result.deleted) {
                     // Alert user error happened
-                    swal({
-                      type: 'error',
-                      title: 'Oops...',
-                      text: chrome.i18n.getMessage('errorDeletingHypothesisAnnotation')
-                    })
+                    Alerts.errorAlert({text: chrome.i18n.getMessage('errorDeletingHypothesisAnnotation')})
                   } else {
                     // Remove annotation from data model
                     _.remove(this.currentAnnotations, (currentAnnotation) => {
@@ -555,38 +551,36 @@ class TextAnnotator extends ContentAnnotator {
               let isSidebarOpened = window.abwa.sidebar.isOpened()
               this.closeSidebar()
               // Open sweetalert
-              swal({
+              Alerts.inputTextAlert({
                 input: 'textarea',
                 inputPlaceholder: annotation.text || 'Type your feedback here...',
                 inputValue: annotation.text || '',
-                showCancelButton: true
-              }).then((result) => {
-                if (result.value) {
-                  // Update annotation
-                  annotation.text = result.value || ''
-                  window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
-                    annotation.id,
-                    annotation,
-                    (err, annotation) => {
-                      if (err) {
-                        // TODO Swal
-                        swal({
-                          type: 'error',
-                          title: 'Oops...',
-                          text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')
-                        })
-                      } else {
-                        // Dispatch updated annotations events
-                        LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
-                        LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
-                        LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
-                        // Redraw annotations
-                        DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
-                        this.highlightAnnotation(annotation)
-                      }
-                    })
-                  if (isSidebarOpened) {
-                    this.openSidebar()
+                callback: (err, result) => {
+                  if (err) {
+                    window.alert('Unable to load alert. Is this an annotable document?')
+                  } else {
+                    // Update annotation
+                    annotation.text = result || ''
+                    window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
+                      annotation.id,
+                      annotation,
+                      (err, annotation) => {
+                        if (err) {
+                          // Show error message
+                          Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
+                        } else {
+                          // Dispatch updated annotations events
+                          LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
+                          LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
+                          LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
+                          // Redraw annotations
+                          DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
+                          this.highlightAnnotation(annotation)
+                        }
+                      })
+                    if (isSidebarOpened) {
+                      this.openSidebar()
+                    }
                   }
                 }
               })
