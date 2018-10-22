@@ -34,7 +34,11 @@ class Rubric extends AnnotationGuide {
       references: [],
       tags: ['exam:metadata'],
       target: [],
-      text: 'moodleEndpoint: ' + this.moodleEndpoint + '\nassignmentId: ' + this.assignmentId + '\ncmid: ' + this.cmid,
+      text: jsYaml.dump({
+        moodleEndpoint: this.moodleEndpoint,
+        assignmentId: this.assignmentId,
+        cmid: this.cmid
+      }),
       uri: this.hypothesisGroup.links.html
     }
   }
@@ -69,6 +73,7 @@ class Rubric extends AnnotationGuide {
       // Get criteria corresponding to the level
       let levelConfig = jsYaml.load(levelAnnotation.text)
       if (_.isObject(levelConfig) && _.isNumber(levelConfig.criteriaId)) {
+        console.log(levelAnnotation)
         let criteriaId = levelConfig.criteriaId
         let criteria = _.find(rubric.criterias, (criteria) => {
           return criteria.criteriaId === criteriaId

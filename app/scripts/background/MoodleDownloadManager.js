@@ -16,7 +16,8 @@ class MoodleDownloadManager {
         // Save file metadata and data to mark on moodle
         this.files[downloadItem.id] = {
           url: URLUtils.retrieveMainUrl(downloadItem.url),
-          studentId: studentId
+          studentId: studentId,
+          mag: hashParams['mag'] || null
         }
       }
     })
@@ -27,11 +28,15 @@ class MoodleDownloadManager {
           if (err) {
             suggest() // Suggest default
           } else {
-            let fileExtensionArray = JSON.parse(fileExtensions.data).split(',')
-            let originalFilenameExtension = _.last(downloadItem.filename.split('.'))
-            let matchExtension = _.find(fileExtensionArray, (ext) => { return ext === originalFilenameExtension })
-            if (_.isString(matchExtension)) {
-              suggest({filename: downloadItem.filename + '.txt'})
+            if (fileExtensions) {
+              let fileExtensionArray = JSON.parse(fileExtensions.data).split(',')
+              let originalFilenameExtension = _.last(downloadItem.filename.split('.'))
+              let matchExtension = _.find(fileExtensionArray, (ext) => { return ext === originalFilenameExtension })
+              if (_.isString(matchExtension)) {
+                suggest({filename: downloadItem.filename + '.txt'})
+              } else {
+                suggest()
+              }
             } else {
               suggest()
             }
@@ -51,6 +56,15 @@ class MoodleDownloadManager {
           this.files[downloadItem.id]['localPath'] = encodeURI('file://' + downloadItem.filename.current)
         } else { // Windows-based filesystem
           this.files[downloadItem.id]['localPath'] = encodeURI('file:///' + _.replace(downloadItem.filename.current, /\\/g, '/'))
+        }
+        // If mag is set in the URL, open a new tab with the document
+        if (this.files[downloadItem.id]['mag'] && this.files[downloadItem.id]['studentId']) {
+          setTimeout(() => {
+            let localUrl = this.files[downloadItem.id]['localPath'] + '#mag:' + this.files[downloadItem.id]['mag'] + '&studentId:' + this.files[downloadItem.id]['studentId']
+            chrome.tabs.create({url: localUrl}, (tab) => {
+              this.files[downloadItem.id]['mag'] = null
+            })
+          }, 500)
         }
       }
     })

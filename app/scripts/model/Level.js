@@ -25,7 +25,7 @@ class Level extends GuideElement {
       references: [],
       tags: ['exam:isCriteriaOf:' + this.criteria.name, 'exam:mark:' + this.name],
       target: [],
-      text: 'levelId: ' + this.levelId + '\ncriteriaId: ' + this.criteria.criteriaId + '\ndescription: ' + this.description,
+      text: jsYaml.dump({levelId: this.levelId, criteriaId: this.criteria.criteriaId, description: this.description}),
       uri: rubric.hypothesisGroup.links.html
     }
   }

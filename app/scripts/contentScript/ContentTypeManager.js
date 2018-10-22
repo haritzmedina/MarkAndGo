@@ -44,7 +44,7 @@ class ContentTypeManager {
             if (window.PDFViewerApplication.url.startsWith('file:///')) {
               this.localFile = true
               // Check in moodle download manager if the file exists
-              chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: window.PDFViewerApplication.url}}, (fileMetadata) => {
+              chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: URLUtils.retrieveMainUrl(window.PDFViewerApplication.url)}}, (fileMetadata) => {
                 if (_.isEmpty(fileMetadata)) {
                   // Warn user document is not from moodle
                   Alerts.warningAlert({
@@ -77,9 +77,12 @@ class ContentTypeManager {
           if (window.location.href.startsWith('file:///')) {
             this.localFile = true
             // Check in moodle download manager if the file exists
-            chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: window.location.href}}, (fileMetadata) => {
+            chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: URLUtils.retrieveMainUrl(window.location.href)}}, (fileMetadata) => {
               if (_.isEmpty(fileMetadata)) {
-                // TODO Warn user document is not from moodle
+                // Warn user document is not from moodle
+                Alerts.warningAlert({
+                  text: 'Try to download the file again from moodle and if the error continues check <a href="https://github.com/haritzmedina/MarkAndGo/wiki/Most-common-errors-in-Mark&Go#file-is-not-from-moodle">this</a>.',
+                  title: 'This file is not downloaded from moodle'})
                 this.documentURL = URLUtils.retrieveMainUrl(window.location.href)
               } else {
                 this.fileMetadata = fileMetadata.file

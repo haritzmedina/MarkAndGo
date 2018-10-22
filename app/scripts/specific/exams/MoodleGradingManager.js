@@ -75,17 +75,27 @@ class MoodleGradingManager {
                 } else {
                   levelName = null
                 }
-                let url = annotation.uri + '#mag:' + annotation.id
+                let url = annotation.uri + '#studentId:' + studentId + '&mag:' + annotation.id
+                // Construct feedback
                 let text = annotation.text
-                return {criteriaName, levelName, text, url}
+                let feedbackCommentElement = ''
+                if (text) {
+                  let quoteSelector = _.find(annotation.target[0].selector, (selector) => { return selector.type === 'TextQuoteSelector' })
+                  if (quoteSelector) {
+                    feedbackCommentElement = '<b>' + text + '</b>' + '<pre>' + quoteSelector.exact + '</pre><a href="' + url + '">See in context</a>'
+                  }
+                }
+                return {criteriaName, levelName, text, url, feedbackCommentElement}
               })
               // Get for each criteria name and mark its corresponding criterionId and level from window.abwa.rubric
               let criterionAndLevels = this.getCriterionAndLevel(marks)
+              let feedbackComment = this.getFeedbackComment(marks)
               // Compose moodle data
               let moodleGradingData = this.composeMoodleGradingData({
                 criterionAndLevels,
                 userId: studentId,
-                assignmentId: assignmentId
+                assignmentId: assignmentId,
+                feedbackComment: feedbackComment
               })
               // Update student grading in moodle
               this.moodleClientManager.moodleClient.updateStudentGradeWithRubric(moodleGradingData, (err) => {
@@ -135,7 +145,25 @@ class MoodleGradingManager {
     return _.map(resultingMarks, (mark, key) => { return {criterionId: key, levelid: mark.levelid, remark: mark.remark} })
   }
 
-  composeMoodleGradingData ({criterionAndLevels, userId, assignmentId}) {
+  getFeedbackComment (marks) {
+    let feedbackComment = ''
+    let groupedMarksArray = _.values(_.groupBy(marks, 'criteriaName'))
+    _.forEach(groupedMarksArray, (markGroup) => {
+      // Criteria + level
+      let criteria = markGroup[0].criteriaName
+      let levelId = markGroup[0].levelName
+      feedbackComment += '<h2>Criteria: ' + criteria + ' - Mark: ' + levelId + '</h2><br/>'
+      // Comments
+      _.forEach(markGroup, (mark) => {
+        feedbackComment += mark.feedbackCommentElement + '<br/>'
+      })
+      // hr
+      feedbackComment += '<hr/>'
+    })
+    return feedbackComment
+  }
+
+  composeMoodleGradingData ({criterionAndLevels, userId, assignmentId, feedbackComment}) {
     let rubric = {criteria: []}
     for (let i = 0; i < criterionAndLevels.length; i++) {
       let criterionAndLevel = criterionAndLevels[i]
@@ -146,7 +174,8 @@ class MoodleGradingManager {
             {
               'criterionid': '0',
               'levelid': criterionAndLevel.levelid,
-              'remark': criterionAndLevel.remark
+              'remark': criterionAndLevel.remark,
+              'remarkformat': 1
             }
           ]
         })
@@ -160,7 +189,13 @@ class MoodleGradingManager {
       'workflowstate': '',
       'applytoall': 1,
       'grade': '0',
-      'advancedgradingdata': { rubric: rubric }
+      'advancedgradingdata': { rubric: rubric },
+      'plugindata': {
+        'assignfeedbackcomments_editor': {
+          'format': '1', // HTML
+          'text': feedbackComment
+        }
+      }
     }
   }
 

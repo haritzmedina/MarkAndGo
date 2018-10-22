@@ -31,7 +31,7 @@ class Criteria extends GuideElement {
       references: [],
       tags: ['exam:criteria:' + this.name],
       target: [],
-      text: 'criteriaId: ' + this.criteriaId,
+      text: jsYaml.dump({criteriaId: this.criteriaId}),
       uri: rubric.hypothesisGroup.links.html
     }
   }

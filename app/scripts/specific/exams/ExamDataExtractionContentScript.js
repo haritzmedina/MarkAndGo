@@ -1,17 +1,12 @@
 const _ = require('lodash')
 const jsYaml = require('js-yaml')
-const StudentLogging = require('./StudentLogging')
+// const StudentLogging = require('./StudentLogging')
 const Screenshots = require('./Screenshots')
 const Config = require('../../Config')
 const BackToWorkspace = require('./BackToWorkspace')
 const MoodleGradingManager = require('./MoodleGradingManager')
 
 class ExamDataExtractionContentScript {
-  constructor () {
-    this.backToSpreadsheetLink = null
-    this.spreadsheetId = null
-  }
-
   init (callback) {
     // Enable different functionality if current user is the teacher or student
     this.currentUserIsTeacher((err, isTeacher) => {
@@ -28,18 +23,19 @@ class ExamDataExtractionContentScript {
 
           window.abwa.specific.backToWorkspace = new BackToWorkspace()
           window.abwa.specific.backToWorkspace.init()
+
+          // Enable screenshot functionality
+          window.abwa.specific.screenshots = new Screenshots()
+          window.abwa.specific.screenshots.init()
         } else { // Change to checker mode
           window.abwa.specific = window.abwa.specific || {}
           // Log student reviewed the exam
-          window.abwa.specific.studentLogging = new StudentLogging()
-          window.abwa.specific.studentLogging.init()
+          // window.abwa.specific.studentLogging = new StudentLogging()
+          // window.abwa.specific.studentLogging.init()
           if (_.isFunction(callback)) {
             callback()
           }
         }
-        // Enable screenshot functionality
-        window.abwa.specific.screenshots = new Screenshots()
-        window.abwa.specific.screenshots.init()
       }
     })
   }

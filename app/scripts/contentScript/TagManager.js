@@ -22,9 +22,11 @@ class TagManager {
   }
 
   init (callback) {
+    console.debug('Initializing TagManager')
     this.initTagsStructure(() => {
       this.initEventHandlers(() => {
         this.initAllTags(() => {
+          console.debug('Initialized TagManager')
           if (_.isFunction(callback)) {
             callback()
           }
