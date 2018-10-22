@@ -162,7 +162,15 @@ class TagManager {
         }
       }
     }
-    tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => { tagGroup.tags = _.sortBy(tagGroup.tags, 'name'); return tagGroup })
+    tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => {
+      // TODO Check all elements, not only tags[0]
+      if (_.isNaN(_.parseInt(tagGroup.tags[0].name))) {
+        tagGroup.tags = _.sortBy(tagGroup.tags, 'name')
+      } else {
+        tagGroup.tags = _.sortBy(tagGroup.tags, (tag) => _.parseInt(tag.name))
+      }
+      return tagGroup
+    })
     // Set color for each code
     tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => {
       if (tagGroup.tags.length > 0) {
