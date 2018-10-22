@@ -58,7 +58,8 @@ class MoodleGradingManager {
           // Get all annotations for user id
           window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
             tags: 'exam:studentId:' + studentId,
-            group: window.abwa.groupSelector.currentGroup.id
+            group: window.abwa.groupSelector.currentGroup.id,
+            user: window.abwa.groupSelector.user.userid
           }, (err, annotations) => {
             if (err) {
 

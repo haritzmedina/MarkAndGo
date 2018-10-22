@@ -64,7 +64,7 @@ class MoodleDownloadManager {
             chrome.tabs.create({url: localUrl}, (tab) => {
               this.files[downloadItem.id]['mag'] = null
             })
-          }, 500)
+          }, 2000) // TODO Check how can it works for all the download speeds
         }
       }
     })
