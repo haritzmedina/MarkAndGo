@@ -49,7 +49,7 @@ class LanguageUtils {
    * @returns {CustomEvent}
    */
   static createCustomEvent (name, message, data) {
-    return (new CustomEvent(name, {
+    return (new window.CustomEvent(name, {
       detail: {
         message: message,
         data: data,
@@ -80,7 +80,7 @@ class LanguageUtils {
    * @param metadata
    */
   static dispatchCustomEvent (eventName, metadata) {
-    let event = new CustomEvent(
+    let event = new window.CustomEvent(
       eventName, {
         detail: metadata,
         bubbles: true,
@@ -89,6 +89,26 @@ class LanguageUtils {
     )
     document.body.dispatchEvent(event)
     return event
+  }
+
+  /**
+   * Run promises in serial. Taken from https://decembersoft.com/posts/promises-in-serial-with-array-reduce/
+   * @param promises
+   * @param callback
+   */
+  static runPromisesInSerial (promises, callback) {
+    promises.reduce((promiseChain, currentTask) => {
+      return promiseChain.then(chainResults =>
+        currentTask.then(currentResult => {
+          return [ ...chainResults, currentResult ]
+        })
+      )
+    }, Promise.resolve([])).then(arrayOfResults => {
+      // Do something with all results
+      if (_.isFunction(callback)) {
+        callback(arrayOfResults)
+      }
+    })
   }
 }
 

@@ -99,7 +99,7 @@ class MoodleGradingManager {
                 feedbackComment: feedbackComment
               })
               // Update student grading in moodle
-              this.moodleClientManager.moodleClient.updateStudentGradeWithRubric(moodleGradingData, (err) => {
+              this.moodleClientManager.updateStudentGradeWithRubric(moodleGradingData, (err) => {
                 if (err) {
                   if (_.isFunction(callback)) {
                     callback(new Error('Error when updating moodle'))

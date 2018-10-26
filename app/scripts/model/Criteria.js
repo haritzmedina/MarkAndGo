@@ -1,6 +1,7 @@
 const GuideElement = require('./GuideElement')
 const jsYaml = require('js-yaml')
 const _ = require('lodash')
+const Level = require('./Level')
 
 class Criteria extends GuideElement {
   constructor ({name, color, criteriaId, rubric}) {
@@ -56,6 +57,17 @@ class Criteria extends GuideElement {
     } else {
       console.error('Unable to retrieve criteria from annotation')
     }
+  }
+
+  static createCriteriaFromObject (criteria, rubric) {
+    criteria.parentElement = rubric
+    // Instance criteria object
+    let instancedCriteria = Object.assign(new Criteria({}), criteria)
+    // Instance levels
+    for (let i = 0; i < criteria.levels.length; i++) {
+      instancedCriteria.levels[i] = Level.createLevelFromObject(criteria.levels[i], instancedCriteria)
+    }
+    return instancedCriteria
   }
 }
 

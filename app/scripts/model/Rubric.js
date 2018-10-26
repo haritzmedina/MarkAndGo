@@ -94,6 +94,16 @@ class Rubric extends AnnotationGuide {
     config.hypothesisGroup = window.abwa.groupSelector.currentGroup
     return new Rubric(config)
   }
+
+  static createRubricFromObject (rubric) {
+    // Instance rubric object
+    let instancedRubric = Object.assign(new Rubric({moodleEndpoint: 'http://ss.com', assignmentName: 'aa'}), rubric)
+    // Instance criterias and levels
+    for (let i = 0; i < rubric.criterias.length; i++) {
+      instancedRubric.criterias[i] = Criteria.createCriteriaFromObject(rubric.criterias[i], instancedRubric)
+    }
+    return instancedRubric
+  }
 }
 
 module.exports = Rubric

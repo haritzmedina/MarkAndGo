@@ -13,7 +13,7 @@ class MoodleClient {
   }
 
   updateEndpoint (endpoint) {
-
+    this.endpoint = endpoint
   }
 
   init () {
@@ -68,6 +68,29 @@ class MoodleClient {
     }
     axios(settings).then((response) => {
       callback(null, response.data)
+    })
+  }
+
+  getStudents (courseId, callback) {
+    let settings = {
+      'async': true,
+      'crossDomain': true,
+      'url': this.endpoint + '/webservice/rest/server.php?',
+      'params': {
+        'wstoken': this.token,
+        'wsfunction': 'core_enrol_get_enrolled_users',
+        'courseid': courseId,
+        'moodlewsrestformat': 'json'
+      },
+      'method': 'GET',
+      'headers': {
+        'Cache-Control': 'no-cache'
+      }
+    }
+    axios(settings).then((response) => {
+      if (_.isFunction(callback)) {
+        callback(null, response.data)
+      }
     })
   }
 }

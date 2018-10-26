@@ -3,6 +3,7 @@ const _ = require('lodash')
 const ChromeStorage = require('../utils/ChromeStorage')
 
 const MoodleClient = require('../moodle/MoodleClient')
+const MoodleFunctions = require('../moodle/MoodleFunctions')
 
 class MoodleBackgroundManager {
   init () {
@@ -15,12 +16,12 @@ class MoodleBackgroundManager {
               if (err) {
 
               } else {
-                this.testTokens({endpoint, tokens}, (err, token) => {
+                this.testTokens({endpoint, tokens}, (err, tokens) => {
                   if (err) {
                     sendResponse({err: err})
                   } else {
                     // Return token in response
-                    sendResponse({token: token})
+                    sendResponse({tokens: tokens})
                   }
                 })
               }
@@ -91,31 +92,30 @@ class MoodleBackgroundManager {
         let promises = []
         for (let i = 0; i < tokens.length; i++) {
           let token = tokens[i]
-          promises.push(new Promise((resolve) => {
-            let moodleClient = new MoodleClient(endpoint, token)
-            moodleClient.getRubric('0', (err, result) => {
-              if (err || result.exception === 'webservice_access_exception') {
-                resolve({token: token, enabled: false, service: 'core_grading_get_definitions'})
-              } else {
-                moodleClient.updateStudentGradeWithRubric({}, (err, result) => {
-                  if (err || result.exception === 'webservice_access_exception') {
-                    resolve({token: token, enabled: false, service: 'mod_assign_save_grade'})
-                  } else {
-                    resolve({token: token, enabled: true})
-                  }
+          // Test each service
+          let moodleClient = new MoodleClient(endpoint, token)
+          let functionsToTest = _.values(MoodleFunctions)
+          for (let i = 0; i < functionsToTest.length; i++) {
+            let bindFunction = functionsToTest[i].clientFunc.bind(moodleClient)
+            promises.push(new Promise((resolve) => {
+              bindFunction(functionsToTest[i].testParams, (err, result) => {
+                resolve({
+                  token: token,
+                  service: functionsToTest[i].wsFunc,
+                  enabled: !(err || result.exception === 'webservice_access_exception')
                 })
-              }
-            })
-          }))
+              })
+            }))
+          }
         }
         Promise.all(promises).then((resolves) => {
-          let resolve = _.find(resolves, (resolve) => {
-            return resolve.enabled
+          let tests = _.map(_.groupBy(resolves, 'token'), (elem, key) => {
+            return {token: key, tests: elem}
           })
-          if (_.isObject(resolve)) {
-            callback(null, resolve.token)
-          } else {
-            callback(new Error('None of the tokens have the required permissions'))
+          // Remove tokens with not any of the functions enabled
+          tests = _.filter(tests, (test) => { return _.find(test.tests, 'enabled') })
+          if (_.isObject(resolves)) {
+            callback(null, tests)
           }
         })
       }

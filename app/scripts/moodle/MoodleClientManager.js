@@ -1,5 +1,6 @@
 const MoodleClient = require('./MoodleClient')
 const _ = require('lodash')
+const MoodleFunctions = require('./MoodleFunctions')
 
 class MoodleClientManager {
   constructor (moodleEndPoint) {
@@ -16,13 +17,62 @@ class MoodleClientManager {
       if (result.err) {
         callback(new Error('Unable to retrieve valid token'))
       } else {
-        this.token = result.token
-        this.moodleClient = new MoodleClient(this.moodleEndpoint, this.token)
+        this.tokens = result.tokens
+        this.moodleClient = new MoodleClient(this.moodleEndpoint)
         if (_.isFunction(callback)) {
           callback()
         }
       }
     })
+  }
+
+  getRubric (cmids, callback) {
+    if (_.isFunction(callback)) {
+      let token = this.getTokenFor(MoodleFunctions.getRubric.wsFunc)
+      if (_.isString(token)) {
+        this.moodleClient.updateToken(token)
+        this.moodleClient.getRubric(cmids, callback)
+      } else {
+        callback(new Error('NoPermissions'))
+      }
+    }
+  }
+
+  updateStudentGradeWithRubric (data, callback) {
+    if (_.isFunction(callback)) {
+      let token = this.getTokenFor(MoodleFunctions.updateStudentsGradeWithRubric.wsFunc)
+      if (_.isString(token)) {
+        this.moodleClient.updateToken(token)
+        this.moodleClient.updateStudentGradeWithRubric(data, callback)
+      } else {
+        callback(new Error('NoPermissions'))
+      }
+    }
+  }
+
+  getStudents (courseId, callback) {
+    if (_.isFunction(callback)) {
+      let token = this.getTokenFor(MoodleFunctions.updateStudentsGradeWithRubric.wsFunc)
+      if (_.isString(token)) {
+        this.moodleClient.updateToken(token)
+        this.moodleClient.getStudents(courseId, callback)
+      } else {
+        callback(new Error('NoPermissions'))
+      }
+    }
+  }
+
+  getTokenFor (wsFunction) {
+    let tokenWrapper = _.find(this.tokens, (token) => {
+      return _.find(token.tests, (test) => {
+        return test.service === wsFunction && test.enabled
+      })
+    })
+    if (tokenWrapper) {
+      return tokenWrapper.token
+    } else {
+      return null
+    }
   }
 }
 

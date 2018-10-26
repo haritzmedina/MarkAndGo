@@ -24,19 +24,45 @@ class HypothesisClientManager {
   }
 
   reloadHypothesisClient (callback) {
-    chrome.runtime.sendMessage({scope: 'hypothesis', cmd: 'getToken'}, (token) => {
-      if (this.hypothesisToken !== token) {
-        this.hypothesisToken = token
-        if (this.hypothesisToken) {
-          this.hypothesisClient = new HypothesisClient(token)
-        } else {
-          this.hypothesisClient = new HypothesisClient()
+    if (_.has(window.background, 'hypothesisManager')) {
+      if (_.isString(window.background.hypothesisManager.token)) {
+        if (this.hypothesisToken !== window.background.hypothesisManager.token) {
+          this.hypothesisToken = window.background.hypothesisManager.token
+          if (this.hypothesisToken) {
+            this.hypothesisClient = new HypothesisClient(window.background.hypothesisManager.token)
+          } else {
+            this.hypothesisClient = new HypothesisClient()
+          }
         }
+        if (_.isFunction(callback)) {
+          callback()
+        }
+      } else {
+        window.background.hypothesisManager.retrieveHypothesisToken((err, token) => {
+          if (err) {
+            this.hypothesisClient = new HypothesisClient()
+            this.hypothesisToken = null
+          } else {
+            this.hypothesisClient = new HypothesisClient(token)
+            this.hypothesisToken = token
+          }
+        })
       }
-      if (_.isFunction(callback)) {
-        callback()
-      }
-    })
+    } else {
+      chrome.runtime.sendMessage({scope: 'hypothesis', cmd: 'getToken'}, (token) => {
+        if (this.hypothesisToken !== token) {
+          this.hypothesisToken = token
+          if (this.hypothesisToken) {
+            this.hypothesisClient = new HypothesisClient(token)
+          } else {
+            this.hypothesisClient = new HypothesisClient()
+          }
+        }
+        if (_.isFunction(callback)) {
+          callback()
+        }
+      })
+    }
   }
 
   isLoggedIn () {

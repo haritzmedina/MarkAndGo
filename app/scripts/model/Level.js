@@ -48,6 +48,13 @@ class Level extends GuideElement {
       console.error('Unable to retrieve mark from annotation')
     }
   }
+
+  static createLevelFromObject (level, criteria) {
+    level.parentElement = criteria
+    // Instance level object
+    let instancedLevel = Object.assign(new Level({}), level)
+    return instancedLevel
+  }
 }
 
 module.exports = Level

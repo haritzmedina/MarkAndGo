@@ -1,14 +1,13 @@
 const MoodleClientManager = require('./MoodleClientManager')
+const MoodleFunctions = require('./MoodleFunctions')
 const _ = require('lodash')
 const Rubric = require('../model/Rubric')
 const Criteria = require('../model/Criteria')
 const Level = require('../model/Level')
 const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
-const ChromeStorage = require('../utils/ChromeStorage')
 const Alerts = require('../utils/Alerts')
-const jsYaml = require('js-yaml')
-
-const selectedGroupNamespace = 'hypothesis.currentGroup'
+const LanguageUtils = require('../utils/LanguageUtils')
+const CircularJSON = require('circular-json-es6')
 
 class MoodleContentScript {
   constructor () {
@@ -21,13 +20,13 @@ class MoodleContentScript {
 
   init (callback) {
     this.showToolIsConfiguring()
+    // Create hypothesis client
     this.initHypothesisClient(() => {
-      // It will retrieve
       this.scrapAssignmentData((err, assignmentData) => {
         if (err) {
 
         } else {
-          // Retrieve moodle client
+          // Create moodle client
           this.moodleClientManager = new MoodleClientManager(this.moodleEndpoint)
           this.moodleClientManager.init((err) => {
             if (err) {
@@ -35,43 +34,96 @@ class MoodleContentScript {
               Alerts.errorAlert({text: 'Unable to retrieve rubric from moodle, have you the required permissions to get the rubric via API?'})
               callback(err)
             } else {
-              this.moodleClientManager.moodleClient.getRubric(this.assignmentId, (err, rubrics) => {
-                if (err) {
-
+              let promises = []
+              // Get rubric
+              promises.push(new Promise((resolve, reject) => {
+                this.getRubric(assignmentData.assignmentId, (err, rubric) => {
+                  if (err) {
+                    reject(err)
+                  } else {
+                    resolve(rubric)
+                  }
+                })
+              }))
+              // Get students
+              promises.push(new Promise((resolve, reject) => {
+                this.getStudents(assignmentData.courseId, (err, rubric) => {
+                  if (err) {
+                    reject(err)
+                  } else {
+                    resolve(rubric)
+                  }
+                })
+              }))
+              Promise.all(promises).catch((rejects) => {
+                Alerts.errorAlert({
+                  title: 'Something went wrong',
+                  text: rejects[0].message
+                })
+              }).then((resolves) => {
+                let rubric = null
+                let students = null
+                if (LanguageUtils.isInstanceOf(resolves[0], Rubric)) {
+                  rubric = resolves[0]
+                  students = resolves[1]
                 } else {
-                  console.log(rubrics)
-                  this.constructRubricsModel({
-                    moodleRubrics: rubrics,
-                    callback: (err, rubric) => {
-                      if (_.isFunction(callback)) {
-                        if (err) {
-                          // TODO Show error to user
-                          callback(err)
-                        } else {
-                          // Create hypothesis group with annotations
-                          this.generateHypothesisGroup({
-                            rubric,
-                            callback: (err) => {
-                              if (_.isFunction(callback)) {
-                                if (err) {
-                                  // TODO Show error to user
-                                  callback(err)
-                                } else {
-                                  callback(null)
-                                }
-                              }
-                            }
-                          })
-                        }
-                      }
-                    }
-                  })
+                  rubric = resolves[1]
+                  students = resolves[0]
                 }
+                // Send task to background
+                chrome.runtime.sendMessage({scope: 'task', cmd: 'createHighlighters', data: {rubric: CircularJSON.stringifyStrict(rubric), students: students, courseId: assignmentData.courseId}}, (result) => {
+                  if (result.err) {
+                    Alerts.errorAlert({
+                      title: 'Something went wrong',
+                      text: 'Error when sending createHighlighters to the background. Please try it again.'
+                    })
+                  } else {
+                    let minutes = result.minutes
+                    Alerts.infoAlert({
+                      title: 'Configuration started',
+                      text: 'We are configuring everything to start marking students exams using Mark&Go.' +
+                        `This can take around <b>${minutes} minute(s)</b>.` +
+                        'You can close this window, we will notify you when it is finished.'
+                    })
+                    // Show message
+                    callback(null)
+                  }
+                })
+              }).catch((rejects) => {
+                Alerts.errorAlert({
+                  title: 'Something went wrong',
+                  text: rejects.message + '.\n' + chrome.i18n.getMessage('ContactAdministrator')
+                })
               })
             }
           })
         }
       })
+    })
+  }
+
+  getRubric (assignmentId, callback) {
+    if (_.isFunction(callback)) {
+      this.moodleClientManager.getRubric(assignmentId, (err, rubrics) => {
+        if (err) {
+          callback(new Error('Unable to get rubric from moodle. Check if you have the permission: ' + MoodleFunctions.getRubric.wsFunc))
+        } else {
+          this.constructRubricsModel({
+            moodleRubrics: rubrics,
+            callback: callback
+          })
+        }
+      })
+    }
+  }
+
+  getStudents (courseId, callback) {
+    this.moodleClientManager.getStudents(courseId, (err, students) => {
+      if (err) {
+        callback(new Error('Unable to get students from moodle. Check if you have the permission: ' + MoodleFunctions.getStudents.wsFunc))
+      } else {
+        callback(null, students)
+      }
     })
   }
 
@@ -102,48 +154,67 @@ class MoodleContentScript {
     if (window.location.href.includes('grade/grading/')) {
       let assignmentElement = document.querySelector('a[href*="mod/assign"]')
       let assignmentURL = assignmentElement.href
+      // Get assignment name
       this.assignmentName = assignmentElement.innerText
+      // Get assignment id
       this.assignmentId = (new URL(assignmentURL)).searchParams.get('id')
+      // Get moodle endpoint
       this.moodleEndpoint = _.split(window.location.href, 'grade/grading/')[0]
-      // Callback with data
-      if (_.isFunction(callback)) {
-        callback(null, {assignmentName: this.assignmentName, assignmentId: this.assignmentId})
-      }
+      // Get course id
+      let courseElement = document.querySelector('a[href*="course/view"]')
+      this.courseId = (new URL(courseElement.href)).searchParams.get('id')
     } else if (window.location.href.includes('mod/assign/view')) {
+      // Get assignment id
       this.assignmentId = (new URL(window.location)).searchParams.get('id')
+      // Get moodle endpoint
       this.moodleEndpoint = _.split(window.location.href, 'mod/assign/view')[0]
       let assignmentElement = null
       // Get assignment name
       // Try moodle 3.5 in assignment main page
       let assignmentElementContainer = document.querySelector('ol.breadcrumb')
-      if (assignmentElementContainer) {
+      if (assignmentElementContainer) { // Is moodle 3.5
+        // Get assignment name
         assignmentElement = assignmentElementContainer.querySelector('a[href*="mod/assign"]')
         this.assignmentName = assignmentElement.innerText
+        // Get course id
+        let courseElement = assignmentElementContainer.querySelector('a[href*="course/view"]')
+        this.courseId = (new URL(courseElement.href)).searchParams.get('id')
       }
       if (!_.isElement(assignmentElement)) {
         // Try moodle 3.1 in assignment main page
         let assignmentElementContainer = document.querySelector('ul.breadcrumb')
         if (assignmentElementContainer) {
+          // Get assignment name
           assignmentElement = assignmentElementContainer.querySelector('a[href*="mod/assign"]')
           this.assignmentName = assignmentElement.innerText
+          // Get course id
+          let courseElement = assignmentElementContainer.querySelector('a[href*="course/view"]')
+          this.courseId = (new URL(courseElement.href)).searchParams.get('id')
         }
         if (!_.isElement(assignmentElement)) {
           // Try moodle 3.5 in student grader page (action=grader)
           let assignmentElementContainer = document.querySelector('[data-region="assignment-info"]')
           if (assignmentElementContainer) {
+            // Get assignment name
             assignmentElement = assignmentElementContainer.querySelector('a[href*="mod/assign"]')
             this.assignmentName = assignmentElement.innerText.split(':')[1].substring(1)
+            // Get course id
+            let courseElement = assignmentElementContainer.querySelector('a[href*="course/view"]')
+            this.courseId = (new URL(courseElement.href)).searchParams.get('id')
           }
         }
       }
-      if (this.assignmentName) {
-        callback(null, {assignmentName: this.assignmentName, assignmentId: this.assignmentId})
-      } else {
-        Alerts.errorAlert({text: chrome.i18n.getMessage('MoodleWrongAssignmentPage')})
-        callback(new Error())
-      }
+    }
+    if (this.assignmentName && this.courseId && this.moodleEndpoint && this.assignmentId) {
+      callback(null, {
+        assignmentName: this.assignmentName,
+        assignmentId: this.assignmentId,
+        courseId: this.courseId,
+        moodleEndpoint: this.moodleEndpoint
+      })
     } else {
-
+      Alerts.errorAlert({text: chrome.i18n.getMessage('MoodleWrongAssignmentPage')})
+      callback(new Error())
     }
   }
 
@@ -186,160 +257,6 @@ class MoodleContentScript {
       if (_.isFunction(callback)) {
         callback()
       }
-    }
-  }
-
-  generateHypothesisGroup ({rubric, callback}) {
-    if (_.isFunction(callback)) {
-      // Create hypothesis group
-      this.hypothesisClientManager.hypothesisClient.getUserProfile((err, userProfile) => {
-        if (_.isFunction(callback)) {
-          if (err) {
-            console.error(err)
-            callback(err)
-          } else {
-            let group = _.find(userProfile.groups, (group) => {
-              return group.name === rubric.name.substr(0, 25)
-            })
-            if (_.isEmpty(group)) {
-              this.createHypothesisGroup(rubric.name, (err, group) => {
-                if (err) {
-                  Alerts.errorAlert({text: chrome.i18n.getMessage('ErrorConfiguringHighlighter') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')})
-                  callback(err)
-                } else {
-                  // Generate group annotations
-                  rubric.hypothesisGroup = group
-                  let annotations = rubric.toAnnotations()
-                  console.log(annotations)
-                  this.createTeacherAnnotation({teacherId: userProfile.userid, hypothesisGroup: group}, (err) => {
-                    if (err) {
-                      Alerts.errorAlert({text: chrome.i18n.getMessage('ErrorRelatingMoodleAndTool') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')})
-                      callback(err)
-                    } else {
-                      // Create annotations in hypothesis
-                      this.hypothesisClientManager.hypothesisClient.createNewAnnotations(annotations, (err, createdAnnotations) => {
-                        if (err) {
-                          Alerts.errorAlert({text: chrome.i18n.getMessage('ErrorConfiguringHighlighter') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')})
-                        } else {
-                          // Save as current group the generated one
-                          ChromeStorage.setData(selectedGroupNamespace, {data: JSON.stringify(rubric.hypothesisGroup)}, ChromeStorage.local)
-                          Alerts.successAlert({
-                            title: 'Correctly configured',
-                            text: chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + rubric.hypothesisGroup.links.html + '" target="_blank">' + rubric.hypothesisGroup.links.html + '</a>'
-                          })
-                          console.debug('Group created')
-                          callback(null)
-                        }
-                      })
-                    }
-                  })
-                }
-              })
-            } else {
-              this.hypothesisClientManager.hypothesisClient.searchAnnotations({
-                group: group.id,
-                tag: 'exam:teacher'
-              }, (err, annotations) => {
-                if (err) {
-
-                } else {
-                  let teacher = _.find(annotations, (annotation) => {
-                    let data = jsYaml.load(annotation.text)
-                    return data.teacherId === userProfile.userid
-                  })
-                  if (!_.isUndefined(teacher)) {
-                    // Is already a teacher
-                    console.debug('Group already exists, need to update')
-                    Alerts.infoAlert({
-                      text: chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + group.url + '" target="_blank">' + group.url + '</a>',
-                      title: 'The group ' + group.name + ' already exists'
-                    })
-                    callback(null)
-                  } else {
-                    // Is not a teacher yet, ask to join
-                    Alerts.confirmAlert({
-                      title: 'You are not a teacher yet',
-                      text: 'Would you like to join as a teacher to start marking?',
-                      callback: () => {
-                        // TODO Check if this user is teacher
-                        // Find the complete information of the group, currently we only have the short version from userProfile
-                        this.hypothesisClientManager.hypothesisClient.getListOfGroups({}, (err, listOfGroups) => {
-                          if (err) {
-                            Alerts.errorAlert({text: 'Something went wrong when adding you as a teacher.'}) // TODO i18n
-                          } else {
-                            group = _.find(listOfGroups, (groupOfList) => {
-                              return group.id === groupOfList.id
-                            })
-                            this.hypothesisClientManager.hypothesisClient.createNewAnnotation(this.generateTeacherAnnotation(userProfile.userid, group), () => {
-                              if (err) {
-                                Alerts.errorAlert({text: 'Something went wrong when adding you as a teacher.'}) // TODO i18n
-                              } else {
-                                rubric.hypothesisGroup = group // Set hypothesis group in rubric
-                                Alerts.successAlert({
-                                  title: 'Correctly configured',
-                                  text: chrome.i18n.getMessage('ShareHypothesisGroup') + '<br/><a href="' + rubric.hypothesisGroup.links.html + '" target="_blank">' + rubric.hypothesisGroup.links.html + '</a>'
-                                })
-                              }
-                            })
-                          }
-                        })
-                      }
-                    })
-                  }
-                }
-              })
-              // TODO Handle group update
-              // TODO Handle multiple teachers
-            }
-          }
-        }
-      })
-    }
-  }
-
-  createHypothesisGroup (name, callback) {
-    this.hypothesisClientManager.hypothesisClient.createNewGroup({
-      name: name, description: 'A Mark&Go generated group to mark the assignment in moodle called ' + name}, (err, group) => {
-      if (err) {
-        if (_.isFunction(callback)) {
-          callback(err)
-        }
-      } else {
-        if (_.isFunction(callback)) {
-          callback(null, group)
-        }
-      }
-    })
-  }
-
-  createTeacherAnnotation ({teacherId, hypothesisGroup}, callback) {
-    let teacherAnnotation = this.generateTeacherAnnotation(teacherId, hypothesisGroup)
-    this.hypothesisClientManager.hypothesisClient.createNewAnnotation(teacherAnnotation, (err, annotation) => {
-      if (err) {
-        if (_.isFunction(callback)) {
-          callback(err)
-        }
-      } else {
-        console.debug('Created teacher annotation: ')
-        console.debug(annotation)
-        if (_.isFunction(callback)) {
-          callback()
-        }
-      }
-    })
-  }
-
-  generateTeacherAnnotation (teacherId, hypothesisGroup) {
-    return {
-      group: hypothesisGroup.id,
-      permissions: {
-        read: ['group:' + hypothesisGroup.id]
-      },
-      references: [],
-      tags: ['exam:teacher'],
-      target: [],
-      text: 'teacherId: ' + teacherId,
-      uri: hypothesisGroup.links.html // Group url
     }
   }
 }
