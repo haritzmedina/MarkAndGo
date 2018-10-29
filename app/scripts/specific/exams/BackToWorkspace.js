@@ -11,7 +11,7 @@ class BackToWorkspace {
       this.linkToWorkspace.href = rubric.moodleEndpoint + 'mod/assign/view.php?id=' + rubric.cmid + '&rownum=0&action=grader&userid=' + studentId
       this.linkToWorkspace.target = '_blank'
       this.linkToWorkspace.innerText = chrome.i18n.getMessage('backToWorkspace')
-      $('#groupBody').append(this.linkToWorkspace)
+      $('#modeWrapper').append(this.linkToWorkspace)
     }
   }
 
