@@ -80,8 +80,27 @@ class CreateHighlighterTask extends Task {
                   }
                 })
               } else {
-                console.log('Group already created')
-                callback(null, {nothingDone: true})
+                // TODO Check if highlighter for assignment is already created
+                this.hypothesisClientManager.hypothesisClient.searchAnnotations({
+                  group: group.id,
+                  any: '"exam:assignmentId:' + rubric.assignmentId + '"',
+                  limit: 1
+                }, (err, annotations) => {
+                  if (err) {
+                    callback(err)
+                  } else {
+                    if (annotations.length > 0) {
+                      console.log('Group already created')
+                      callback(null, {nothingDone: true})
+                    } else {
+                      this.createHighlighterAnnotations({
+                        rubric, group, userProfile
+                      }, () => {
+                        callback(null)
+                      })
+                    }
+                  }
+                })
               }
             }
           }
@@ -155,7 +174,7 @@ class CreateHighlighterTask extends Task {
       tags: ['exam:teacher'],
       target: [],
       text: 'teacherId: ' + teacherId,
-      uri: hypothesisGroup.links.html // Group url
+      uri: hypothesisGroup.links ? hypothesisGroup.links.html : hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile
     }
   }
 

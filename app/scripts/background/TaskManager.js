@@ -20,8 +20,7 @@ class TaskManager {
             let courseId = request.data.courseId
             let task = this.prepareCreateHighlightersTask(rubric, students, courseId)
             this.addTasks(task)
-            let rubricElements = 100
-            let minutesPending = Math.round(task.activities.length / 60 * 50 / rubricElements)
+            let minutesPending = Math.ceil((task.activities.length / 60) * 5)
             sendResponse({minutes: minutesPending})
           }
         }
@@ -35,7 +34,7 @@ class TaskManager {
   }
 
   addTasks (task) {
-    console.debug('Added new task ' + task.id)
+    console.debug('Added new task ' + task.task + ' with id: ' + task.id)
     // Add to current tasks
     this.currentTasks.push(task)
     // Save current tasks
@@ -77,13 +76,16 @@ class TaskManager {
     if (this.currentTask.task === 'createHighlighters') {
       let currentTask = this.currentTask
       // Create notification handler for task
-      chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+      let buttonClickListener = (notificationId, buttonIndex) => {
         if (buttonIndex === 0) {
           if (_.isFunction(currentTask.notificationHandler)) {
             currentTask.notificationHandler()
           }
         }
-      })
+        // Remove notification listener
+        chrome.notifications.onButtonClicked.removeListener(buttonClickListener)
+      }
+      chrome.notifications.onButtonClicked.addListener(buttonClickListener)
       // Create task
       let task = new CreateHighlighterTask(this.currentTask)
       task.init(() => {

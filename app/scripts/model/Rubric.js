@@ -39,7 +39,7 @@ class Rubric extends AnnotationGuide {
         assignmentId: this.assignmentId,
         cmid: this.cmid
       }),
-      uri: this.hypothesisGroup.links.html
+      uri: this.hypothesisGroup.links ? this.hypothesisGroup.links.html : this.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile
     }
   }
 

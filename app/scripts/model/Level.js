@@ -23,10 +23,10 @@ class Level extends GuideElement {
         read: ['group:' + rubric.hypothesisGroup.id]
       },
       references: [],
-      tags: ['exam:isCriteriaOf:' + this.criteria.name, 'exam:mark:' + this.name],
+      tags: ['exam:isCriteriaOf:' + this.criteria.name, 'exam:mark:' + this.name, 'exam:assignmentId:' + rubric.assignmentId],
       target: [],
       text: jsYaml.dump({levelId: this.levelId, criteriaId: this.criteria.criteriaId, description: this.description}),
-      uri: rubric.hypothesisGroup.links.html
+      uri: rubric.hypothesisGroup.links ? rubric.hypothesisGroup.links.html : rubric.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile
     }
   }
 
@@ -51,6 +51,7 @@ class Level extends GuideElement {
 
   static createLevelFromObject (level, criteria) {
     level.parentElement = criteria
+    level.criteria = level.parentElement
     // Instance level object
     let instancedLevel = Object.assign(new Level({}), level)
     return instancedLevel

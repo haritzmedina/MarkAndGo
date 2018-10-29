@@ -30,10 +30,10 @@ class Criteria extends GuideElement {
         read: ['group:' + rubric.hypothesisGroup.id]
       },
       references: [],
-      tags: ['exam:criteria:' + this.name],
+      tags: ['exam:criteria:' + this.name, 'exam:assignmentId:' + rubric.assignmentId],
       target: [],
       text: jsYaml.dump({criteriaId: this.criteriaId}),
-      uri: rubric.hypothesisGroup.links.html
+      uri: rubric.hypothesisGroup.links ? rubric.hypothesisGroup.links.html : rubric.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile
     }
   }
 
@@ -61,6 +61,7 @@ class Criteria extends GuideElement {
 
   static createCriteriaFromObject (criteria, rubric) {
     criteria.parentElement = rubric
+    criteria.rubric = criteria.parentElement
     // Instance criteria object
     let instancedCriteria = Object.assign(new Criteria({}), criteria)
     // Instance levels

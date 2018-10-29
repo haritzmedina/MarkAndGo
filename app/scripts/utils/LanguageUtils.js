@@ -1,6 +1,7 @@
 'use strict'
 
 const jQuery = require('jquery')
+const _ = require('lodash')
 
 class LanguageUtils {
   /**
