@@ -6,12 +6,13 @@ const _ = require('lodash')
 const LanguageUtils = require('../utils/LanguageUtils')
 
 class Rubric extends AnnotationGuide {
-  constructor ({moodleEndpoint, assignmentId, assignmentName, hypothesisGroup, cmid}) {
+  constructor ({moodleEndpoint, assignmentId, assignmentName, hypothesisGroup, cmid, courseId}) {
     super({name: assignmentName, hypothesisGroup})
     this.moodleEndpoint = moodleEndpoint
     this.assignmentId = assignmentId
     this.criterias = this.guideElements
     this.cmid = cmid
+    this.courseId = courseId
   }
 
   toAnnotations () {
@@ -32,12 +33,12 @@ class Rubric extends AnnotationGuide {
         read: ['group:' + this.hypothesisGroup.id]
       },
       references: [],
-      tags: ['exam:metadata'],
+      tags: ['exam:metadata', 'exam:cmid:' + this.cmid],
       target: [],
       text: jsYaml.dump({
         moodleEndpoint: this.moodleEndpoint,
         assignmentId: this.assignmentId,
-        cmid: this.cmid
+        courseId: this.courseId
       }),
       uri: this.hypothesisGroup.links ? this.hypothesisGroup.links.html : this.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile
     }
@@ -73,7 +74,6 @@ class Rubric extends AnnotationGuide {
       // Get criteria corresponding to the level
       let levelConfig = jsYaml.load(levelAnnotation.text)
       if (_.isObject(levelConfig) && _.isNumber(levelConfig.criteriaId)) {
-        console.log(levelAnnotation)
         let criteriaId = levelConfig.criteriaId
         let criteria = _.find(rubric.criterias, (criteria) => {
           return criteria.criteriaId === criteriaId
@@ -90,6 +90,12 @@ class Rubric extends AnnotationGuide {
 
   static fromAnnotation (annotation) {
     let config = jsYaml.load(annotation.text)
+    let cmidTag = _.find(annotation.tags, (tag) => {
+      return tag.includes('exam:cmid:')
+    })
+    if (_.isString(cmidTag)) {
+      config.cmid = cmidTag.replace('exam:cmid:', '')
+    }
     config.assignmentName = window.abwa.groupSelector.currentGroup.name
     config.hypothesisGroup = window.abwa.groupSelector.currentGroup
     return new Rubric(config)

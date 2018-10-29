@@ -54,16 +54,24 @@ class MoodleGradingManager {
           // Get student id
           let studentId = window.abwa.contentTypeManager.fileMetadata.studentId
           // Get assignmentId from rubric
-          let assignmentId = window.abwa.rubricManager.rubric.assignmentId
-          // Get all annotations for user id
+          let cmid = window.abwa.rubricManager.rubric.cmid
+          // Get all annotations for current cmid
           window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-            tags: 'exam:studentId:' + studentId,
+            any: 'exam:cmid:' + cmid,
             group: window.abwa.groupSelector.currentGroup.id,
             user: window.abwa.groupSelector.user.userid
           }, (err, annotations) => {
             if (err) {
 
             } else {
+              // Filter from search only the annotations which are used to classify and are from this cmid
+              let cmid = window.abwa.rubricManager.rubric.cmid
+              annotations = _.filter(annotations, (anno) => {
+                return anno.uri !== window.abwa.groupSelector.currentGroup.links.html &&
+                  _.find(anno.tags, (tag) => {
+                    return tag === 'exam:cmid:' + cmid
+                  })
+              })
               let marks = _.map(annotations, (annotation) => {
                 let criteriaName = _.find(annotation.tags, (tag) => {
                   return tag.includes('exam:isCriteriaOf:')
@@ -76,14 +84,14 @@ class MoodleGradingManager {
                 } else {
                   levelName = null
                 }
-                let url = annotation.uri + '#studentId:' + studentId + '&mag:' + annotation.id
+                let url = annotation.uri + '#studentId:' + studentId + '&mag:' + annotation.id + '&courseId:' + window.abwa.rubricManager.rubric.courseId + '&cmid:' + window.abwa.rubricManager.rubric.cmid
                 // Construct feedback
                 let text = annotation.text
                 let feedbackCommentElement = ''
                 if (text) {
                   let quoteSelector = _.find(annotation.target[0].selector, (selector) => { return selector.type === 'TextQuoteSelector' })
                   if (quoteSelector) {
-                    feedbackCommentElement = '<b>' + text + '</b>' + '<pre>' + quoteSelector.exact + '</pre><a href="' + url + '">See in context</a>'
+                    feedbackCommentElement = '<b>' + text + '</b><br/><a href="' + url + '">See in context</a>'
                   }
                 }
                 return {criteriaName, levelName, text, url, feedbackCommentElement}
@@ -95,7 +103,7 @@ class MoodleGradingManager {
               let moodleGradingData = this.composeMoodleGradingData({
                 criterionAndLevels,
                 userId: studentId,
-                assignmentId: assignmentId,
+                assignmentId: window.abwa.rubricManager.rubric.assignmentId,
                 feedbackComment: feedbackComment
               })
               // Update student grading in moodle
@@ -147,7 +155,10 @@ class MoodleGradingManager {
   }
 
   getFeedbackComment (marks) {
-    let feedbackComment = ''
+    let feedbackComment = '<h1>How to see feedback in your assignment?</h1><ul>' +
+      '<li><a target="_blank" href="https://chrome.google.com/webstore/detail/markgo/kjedcndgienemldgjpjjnhjdhfoaocfa">Install Mark&Go</a></li>' +
+      '<li><a target="_blank" href="' + window.abwa.groupSelector.currentGroup.links.html + '">Join feedback group</a></li>' +
+      '</ul><hr/>' // TODO i18n
     let groupedMarksArray = _.values(_.groupBy(marks, 'criteriaName'))
     _.forEach(groupedMarksArray, (markGroup) => {
       // Criteria + level
@@ -214,20 +225,27 @@ class MoodleGradingManager {
   updateAnnotationsFromOtherFiles (annotation, callback) {
     // Get all annotations with same criteria and student
     let criteria = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
-    let studentId = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:studentId:')
     let mark = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:mark:')
     window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-      tags: 'exam:studentId:' + studentId + ',' + 'exam:isCriteriaOf:' + criteria,
+      tags: 'exam:isCriteriaOf:' + criteria,
       group: window.abwa.groupSelector.currentGroup.id
     }, (err, oldTagsAnnotations) => {
       if (err) {
 
       } else {
+        let cmid = window.abwa.rubricManager.rubric.cmid
+        // Filter only the ones which are not configuration annotations and are for this cmid
+        oldTagsAnnotations = _.filter(oldTagsAnnotations, (anno) => {
+          return anno.uri !== window.abwa.groupSelector.currentGroup.links.html &&
+            _.find(anno.tags, (tag) => {
+              return tag === 'exam:cmid:' + cmid
+            })
+        })
         let promises = []
         for (let i = 0; i < oldTagsAnnotations.length; i++) {
           let oldTagAnnotation = oldTagsAnnotations[i]
           promises.push(new Promise((resolve, reject) => {
-            oldTagAnnotation.tags = ['exam:isCriteriaOf:' + criteria, 'exam:mark:' + mark, 'exam:studentId:' + studentId]
+            oldTagAnnotation.tags = ['exam:isCriteriaOf:' + criteria, 'exam:mark:' + mark, 'exam:cmid:' + cmid]
             window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(oldTagAnnotation.id, oldTagAnnotation, (err, annotation) => {
               if (err) {
                 reject(new Error('Unable to update annotation ' + oldTagAnnotation.id))

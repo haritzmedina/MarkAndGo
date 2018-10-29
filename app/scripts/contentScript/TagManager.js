@@ -51,7 +51,11 @@ class TagManager {
         annotations = _.filter(annotations, (annotation) => {
           return !this.hasATag(annotation, 'slr:spreadsheet')
         })
-        // Remove tags which are not group or subgroup
+        // Remove tags which are not for the current assignment
+        let cmid = window.abwa.contentTypeManager.fileMetadata.cmid
+        annotations = _.filter(annotations, (annotation) => {
+          return this.hasATag(annotation, 'exam:cmid:' + cmid)
+        })
         if (_.isFunction(callback)) {
           callback(annotations)
         }
@@ -231,7 +235,7 @@ class TagManager {
         handler: (event) => {
           let tags = [
             this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name,
-            'exam:studentId:' + window.abwa.contentTypeManager.fileMetadata.studentId
+            'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
           ]
           LanguageUtils.dispatchCustomEvent(Events.annotate, {tags: tags})
         }})
@@ -258,7 +262,7 @@ class TagManager {
           let newTagList = [
             'exam:isCriteriaOf:' + tagGroup.config.name,
             'exam:mark:' + event.target.dataset.mark,
-            'exam:studentId:' + window.abwa.contentTypeManager.fileMetadata.studentId
+            'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
           ]
           window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
             oldTagList, newTagList,

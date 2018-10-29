@@ -30,7 +30,7 @@ class Criteria extends GuideElement {
         read: ['group:' + rubric.hypothesisGroup.id]
       },
       references: [],
-      tags: ['exam:criteria:' + this.name, 'exam:assignmentId:' + rubric.assignmentId],
+      tags: ['exam:criteria:' + this.name, 'exam:cmid:' + rubric.cmid],
       target: [],
       text: jsYaml.dump({criteriaId: this.criteriaId}),
       uri: rubric.hypothesisGroup.links ? rubric.hypothesisGroup.links.html : rubric.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile

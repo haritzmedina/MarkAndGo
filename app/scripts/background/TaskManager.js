@@ -77,6 +77,7 @@ class TaskManager {
       let currentTask = this.currentTask
       // Create notification handler for task
       let buttonClickListener = (notificationId, buttonIndex) => {
+        // TODO If notification id is the current one for this task
         if (buttonIndex === 0) {
           if (_.isFunction(currentTask.notificationHandler)) {
             currentTask.notificationHandler()

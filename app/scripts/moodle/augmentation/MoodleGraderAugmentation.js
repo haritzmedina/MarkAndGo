@@ -1,4 +1,5 @@
 const _ = require('lodash')
+const MoodleScraping = require('../MoodleScraping')
 
 class MoodleGraderAugmentation {
   constructor () {
@@ -29,12 +30,19 @@ class MoodleGraderAugmentation {
   modifySubmittedFilesUrl (studentId) {
     // Get files elements
     this.waitUntilFilesAreLoaded((submissionFilesContainer) => {
-      let submittedFilesElements = submissionFilesContainer.querySelectorAll('a')
-      // Change URLs of files elements
-      _.forEach(submittedFilesElements, (submittedFileElement) => {
-        submittedFileElement.href = submittedFileElement.href + '#studentId:' + studentId
+      MoodleScraping.scrapAssignmentData((err, assignmentData) => {
+        if (err) {
+
+        } else {
+          let submittedFilesElements = submissionFilesContainer.querySelectorAll('a')
+          // Change URLs of files elements
+          _.forEach(submittedFilesElements, (submittedFileElement) => {
+            submittedFileElement.href = submittedFileElement.href + '#studentId:' +
+              studentId + '&courseId:' + assignmentData.courseId + '&cmid:' + assignmentData.cmid
+          })
+          console.debug('Modified submission files for current student ' + studentId)
+        }
       })
-      console.debug('Modified submission files for current student ' + studentId)
     })
   }
 

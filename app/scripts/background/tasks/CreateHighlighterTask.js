@@ -83,7 +83,7 @@ class CreateHighlighterTask extends Task {
                 // TODO Check if highlighter for assignment is already created
                 this.hypothesisClientManager.hypothesisClient.searchAnnotations({
                   group: group.id,
-                  any: '"exam:assignmentId:' + rubric.assignmentId + '"',
+                  any: '"exam:cmid:' + rubric.cmid + '"',
                   limit: 1
                 }, (err, annotations) => {
                   if (err) {

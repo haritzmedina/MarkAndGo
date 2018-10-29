@@ -12,11 +12,15 @@ class MoodleDownloadManager {
       // Get required data to mark on moodle
       let hashParams = URLUtils.extractHashParamsFromUrl(downloadItem.url, ':')
       let studentId = hashParams['studentId']
+      let courseId = hashParams['courseId']
+      let cmid = hashParams['cmid']
       if (_.isString(studentId)) { // File is downloaded from moodle
         // Save file metadata and data to mark on moodle
         this.files[downloadItem.id] = {
           url: URLUtils.retrieveMainUrl(downloadItem.url),
           studentId: studentId,
+          courseId: courseId,
+          cmid: cmid,
           mag: hashParams['mag'] || null
         }
       }

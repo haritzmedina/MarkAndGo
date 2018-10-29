@@ -1,10 +1,6 @@
-const ChromeStorage = require('../utils/ChromeStorage')
-const LanguageUtils = require('../utils/LanguageUtils')
 const _ = require('lodash')
 const $ = require('jquery')
-
-const selectedGroupNamespace = 'hypothesis.currentGroup'
-const defaultGroup = {id: '__world__', name: 'Public', public: true}
+const Alerts = require('../utils/Alerts')
 
 class GroupSelector {
   constructor () {
@@ -15,129 +11,69 @@ class GroupSelector {
 
   init (callback) {
     console.debug('Initializing group selector')
-    this.addGroupSelectorToSidebar(() => {
-      this.reloadGroupsContainer(() => {
+    this.checkIsLoggedIn((err) => {
+      if (err) {
+        // Stop propagating the rest of the functions, because it is not logged in hypothesis
+      } else {
+        // Retrieve user profile (for further uses in other functionalities of the tool)
         this.retrieveUserProfile(() => {
-          if (_.isFunction(callback)) {
-            callback()
-          }
+          // Define current group
+          this.defineCurrentGroup(() => {
+            if (_.isFunction(callback)) {
+              callback(null)
+            }
+          })
         })
-      })
+      }
+    })
+  }
+  defineCurrentGroup (callback) {
+    let fileMetadata = window.abwa.contentTypeManager.fileMetadata
+    // Get group name from filemetadata
+    let groupName = 'MG' + (new URL(fileMetadata.url)).host.substr(0, 8) + 'C' + fileMetadata.courseId.substring(0, 6) + 'S' + (fileMetadata.studentId + '').substring(0, 7)
+    // Load all the groups belonged to current user
+    this.retrieveHypothesisGroups((err, groups) => {
+      if (err) {
+
+      } else {
+        let group = _.find(groups, (group) => { return group.name === groupName })
+        if (_.isObject(group)) {
+          // Current group will be that group
+          this.currentGroup = group
+          if (_.isFunction(callback)) {
+            callback(null)
+          }
+        } else {
+          // Warn user not group is defined, configure tool first
+          Alerts.errorAlert({text: 'You need to configure the tool before start marking exams. Make sure that you are correctly logged in Hypothes.is.', title: 'Tool is not correctly configured'}) // TODO i18n
+        }
+      }
     })
   }
 
-  addGroupSelectorToSidebar (callback) {
+  checkIsLoggedIn (callback) {
     let sidebarURL = chrome.extension.getURL('pages/sidebar/groupSelection.html')
     $.get(sidebarURL, (html) => {
       // Append sidebar to content
       $('#abwaSidebarContainer').append($.parseHTML(html))
-      if (_.isFunction(callback)) {
-        callback()
-      }
-    })
-  }
-
-  /**
-   * If not current group set, load from chrome storage last session
-   * @param callback
-   */
-  defineCurrentGroup (callback) {
-    // If initialization annotation is set
-    if (window.abwa.annotationBasedInitializer.initAnnotation) {
-      let annotationGroupId = window.abwa.annotationBasedInitializer.initAnnotation.group
-      // Load group of annotation
-      this.retrieveHypothesisGroups((err, groups) => {
-        if (err) {
-          if (_.isFunction(callback)) {
-            callback(err)
-          }
-        } else {
-          // Set current group
-          this.currentGroup = _.find(groups, (group) => { return group.id === annotationGroupId })
-          // Save to chrome storage current group
-          ChromeStorage.setData(selectedGroupNamespace, {data: JSON.stringify(this.currentGroup)}, ChromeStorage.local)
-          if (_.isFunction(callback)) {
-            callback()
-          }
+      if (!window.abwa.hypothesisClientManager.isLoggedIn()) {
+        // Display login/sign up form
+        $('#notLoggedInGroupContainer').attr('aria-hidden', 'false')
+        // Hide group container
+        $('#loggedInGroupContainer').attr('aria-hidden', 'true')
+        // Hide purposes wrapper
+        $('#purposesWrapper').attr('aria-hidden', 'true')
+        // Start listening to when is logged in continuously
+        chrome.runtime.sendMessage({scope: 'hypothesis', cmd: 'startListeningLogin'})
+        // Open the sidebar to notify user that needs to log in
+        window.abwa.sidebar.openSidebar()
+        if (_.isFunction(callback)) {
+          callback(new Error('Is not logged in'))
         }
-      })
-    } else { // If initialization annotation is not set
-      if (!this.currentGroup) {
-        // Retrieve last saved group
-        ChromeStorage.getData(selectedGroupNamespace, ChromeStorage.local, (err, savedCurrentGroup) => {
-          if (err) {
-            if (_.isFunction(callback)) {
-              callback(new Error('Unable to retrieve current selected group'))
-            }
-          } else {
-            // Parse chrome storage result
-            if (!_.isEmpty(savedCurrentGroup) && savedCurrentGroup.data) {
-              this.currentGroup = JSON.parse(savedCurrentGroup.data)
-            } else {
-              this.currentGroup = defaultGroup
-            }
-            if (_.isFunction(callback)) {
-              callback()
-            }
-          }
-        })
       } else {
         if (_.isFunction(callback)) {
           callback()
         }
-      }
-    }
-  }
-
-  reloadGroupsContainer (callback) {
-    if (window.abwa.hypothesisClientManager.isLoggedIn()) {
-      // Hide login/sign up form
-      $('#notLoggedInGroupContainer').attr('aria-hidden', 'true')
-      // Display group container
-      $('#loggedInGroupContainer').attr('aria-hidden', 'false')
-      // Set current group if not defined
-      this.defineCurrentGroup(() => {
-        // Render groups container
-        this.renderGroupsContainer(() => {
-          if (_.isFunction(callback)) {
-            callback()
-          }
-        })
-      })
-    } else {
-      // Display login/sign up form
-      $('#notLoggedInGroupContainer').attr('aria-hidden', 'false')
-      // Hide group container
-      $('#loggedInGroupContainer').attr('aria-hidden', 'true')
-      // Hide purposes wrapper
-      $('#purposesWrapper').attr('aria-hidden', 'true')
-      if (_.isFunction(callback)) {
-        callback()
-      }
-    }
-  }
-
-  renderGroupsContainer (callback) {
-    // Display group selector and purposes selector
-    $('#purposesWrapper').attr('aria-hidden', 'false')
-    // Retrieve groups
-    this.retrieveHypothesisGroups((groups) => {
-      console.debug(groups)
-      let dropdownMenu = document.querySelector('#groupSelector')
-      dropdownMenu.innerHTML = '' // Remove all groups
-      this.groups.forEach(group => {
-        let groupSelectorItem = document.createElement('option')
-        groupSelectorItem.dataset.groupId = group.id
-        groupSelectorItem.innerText = group.name
-        groupSelectorItem.className = 'dropdown-item'
-        dropdownMenu.appendChild(groupSelectorItem)
-      })
-      // Set select option
-      $('#groupSelector').find('option[data-group-id="' + this.currentGroup.id + '"]').prop('selected', 'selected')
-      // Set event handler for group change
-      this.setEventForGroupSelectChange()
-      if (_.isFunction(callback)) {
-        callback()
       }
     })
   }
@@ -169,26 +105,6 @@ class GroupSelector {
           callback(null, profile.groups)
         }
       }
-    })
-  }
-
-  setEventForGroupSelectChange () {
-    let menu = document.querySelector('#groupSelector')
-    $(menu).change(() => {
-      let selectedGroup = $('#groupSelector').find('option:selected').get(0)
-      this.updateCurrentGroupHandler(selectedGroup.dataset.groupId)
-    })
-  }
-
-  updateCurrentGroupHandler (groupId) {
-    this.currentGroup = _.find(this.groups, (group) => { return groupId === group.id })
-    ChromeStorage.setData(selectedGroupNamespace, {data: JSON.stringify(this.currentGroup)}, ChromeStorage.local, () => {
-      console.debug('Group updated. Name: %s id: %s', this.currentGroup.name, this.currentGroup.id)
-      // Dispatch event
-      LanguageUtils.dispatchCustomEvent(GroupSelector.eventGroupChange, {
-        group: this.currentGroup,
-        time: new Date()
-      })
     })
   }
 

@@ -23,7 +23,7 @@ class Level extends GuideElement {
         read: ['group:' + rubric.hypothesisGroup.id]
       },
       references: [],
-      tags: ['exam:isCriteriaOf:' + this.criteria.name, 'exam:mark:' + this.name, 'exam:assignmentId:' + rubric.assignmentId],
+      tags: ['exam:isCriteriaOf:' + this.criteria.name, 'exam:mark:' + this.name, 'exam:cmid:' + rubric.cmid],
       target: [],
       text: jsYaml.dump({levelId: this.levelId, criteriaId: this.criteria.criteriaId, description: this.description}),
       uri: rubric.hypothesisGroup.links ? rubric.hypothesisGroup.links.html : rubric.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile

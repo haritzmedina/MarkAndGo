@@ -16,6 +16,12 @@ class RubricManager {
       if (err) {
         Alerts.warningAlert({text: 'Unable to retrieve document annotations'}) // TODO i18n
       } else {
+        let cmid = window.abwa.contentTypeManager.fileMetadata.cmid
+        annotations = _.filter(annotations, (annotation) => {
+          return _.find(annotation.tags, (tag) => {
+            return tag === 'exam:cmid:' + cmid
+          })
+        })
         this.rubric = Rubric.fromAnnotations(annotations)
         console.debug('Initialized RubricManager')
         if (_.isFunction(callback)) {
