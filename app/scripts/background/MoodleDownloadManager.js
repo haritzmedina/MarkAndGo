@@ -27,7 +27,7 @@ class MoodleDownloadManager {
     })
 
     chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
-      if (this.files[downloadItem.id]) { // Only for files download from moodle
+      if (this.files[downloadItem.id]) { // Only for files downloaded from moodle
         ChromeStorage.getData('fileFormats', ChromeStorage.sync, (err, fileExtensions) => {
           if (err) {
             suggest() // Suggest default

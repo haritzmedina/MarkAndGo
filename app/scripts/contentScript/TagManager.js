@@ -113,6 +113,7 @@ class TagManager {
       // Populate tags containers for the modes
       this.createTagsButtonsForEvidencing()
       this.createTagsButtonsForMarking()
+      this.createTagsButtonsForViewing()
       if (_.isFunction(callback)) {
         callback()
       }
@@ -316,6 +317,58 @@ class TagManager {
     }
   }
 
+  createTagsButtonsForViewing () {
+    this.viewingInterval = setInterval(() => {
+      // Wait until current annotations are loaded
+      if (window.abwa.contentAnnotator &&
+        window.abwa.contentAnnotator.currentAnnotations &&
+        window.abwa.contentAnnotator.currentAnnotations.length > 0) {
+        // Create viewing annotations
+        this.createViewingAnnotations()
+        clearInterval(this.viewingInterval)
+      }
+    }, 1000)
+  }
+
+  createViewingAnnotations () {
+    let currentAnnotations = window.abwa.contentAnnotator.currentAnnotations
+    let tags = _.clone(this.currentTags)
+    // Get tag groups for each annotation
+    let tagGroups = _.uniq(_.map(currentAnnotations, (annotation) => {
+      return _.find(tags, (tagGroup) => {
+        return tagGroup.config.name === annotation.tags[0].replace('exam:isCriteriaOf:', '')
+      })
+    }))
+    // Remove tagGroups elements which are not the mark for the current student
+    _.forEach(tagGroups, (tagGroup) => {
+      _.remove(tagGroup.tags, (tag) => {
+        return _.find(currentAnnotations, (annotation) => {
+          let markTag = _.find(annotation.tags, (annoTag) => {
+            return annoTag.includes('exam:mark:')
+          }).replace('exam:mark:', '')
+          let criteriaTag = _.find(annotation.tags, (annoTag) => {
+            return annoTag.includes('exam:isCriteriaOf:')
+          }).replace('exam:isCriteriaOf:', '')
+          return tag.name !== markTag &&
+            tag.group.config.name === criteriaTag
+        })
+      })
+    })
+    // Create buttons with qualifications
+    for (let i = 0; i < tagGroups.length; i++) {
+      let tagGroup = tagGroups[i]
+      let panel = this.createGroupedButtons({
+        name: tagGroup.config.name,
+        color: tagGroup.config.color,
+        elements: tagGroup.tags,
+        buttonHandler: (event) => {
+          window.abwa.contentAnnotator.goToFirstAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
+        }
+      })
+      this.tagsContainer.viewing.append(panel)
+    }
+  }
+
   createButton ({name, color = 'white', description, handler}) {
     let tagButtonTemplate = document.querySelector('#tagButtonTemplate')
     let tagButton = $(tagButtonTemplate.content.firstElementChild).clone().get(0)
@@ -346,7 +399,7 @@ class TagManager {
     // Create event handler for tag group
     groupNameSpan.addEventListener('click', groupHandler)
     // Create buttons and add to the container
-    if (elements.length > 1) { // Only create group containers for groups which have elements
+    if (elements.length > 0) { // Only create group containers for groups which have elements
       for (let i = 0; i < elements.length; i++) {
         let element = elements[i]
         let button = this.createButton({

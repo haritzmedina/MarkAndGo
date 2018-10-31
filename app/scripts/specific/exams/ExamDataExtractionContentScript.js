@@ -29,6 +29,8 @@ class ExamDataExtractionContentScript {
           window.abwa.specific.screenshots.init()
         } else { // Change to checker mode
           window.abwa.specific = window.abwa.specific || {}
+          window.abwa.tagManager.showViewingTagsContainer()
+          window.abwa.sidebar.openSidebar()
           // Log student reviewed the exam
           // window.abwa.specific.studentLogging = new StudentLogging()
           // window.abwa.specific.studentLogging.init()
