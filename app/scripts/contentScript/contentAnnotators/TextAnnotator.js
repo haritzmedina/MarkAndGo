@@ -640,9 +640,7 @@ class TextAnnotator extends ContentAnnotator {
           this.initAnnotatorByAnnotation()
         }, 2000)
       } else {
-        $('html').animate({
-          scrollTop: ($(firstElementToScroll).offset().top - 200) + 'px'
-        }, 300)
+        firstElementToScroll.scrollIntoView({behavior: 'smooth', block: 'center'})
       }
     }
   }
@@ -699,7 +697,7 @@ class TextAnnotator extends ContentAnnotator {
           }, 2000)
         } else {
           if (_.isElement(firstElementToScroll)) {
-            firstElementToScroll.scrollIntoView()
+            firstElementToScroll.scrollIntoView({behavior: 'smooth', block: 'center'})
           } else {
             // Unable to go to the annotation
           }
