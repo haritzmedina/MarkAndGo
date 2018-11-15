@@ -1,11 +1,25 @@
 # Mark And Go
 [![Build Status](https://travis-ci.com/haritzmedina/MarkAndGo.svg?branch=master)](https://travis-ci.com/haritzmedina/MarkAndGo)
 
-Chrome extension that tracks highlighting activity while reading primary studies, and accordingly populates the Google Sheets application at hand.
+Mark&Go is a chrome extension to allow teachers to mark digital exams and provide faster feedback using web annotations over Moodle.
+Main features:
+* Supports rubric-based assignment marking consuming rubrics from moodle and creating a customized color-based highlighter to annotate evidences and mark assignments in the context
+* Supports feedback messages providing in context
+* Automatically translates marks and comments done in the context to moodle, ready to publish feedback and marks to students.
+* Students can see teacher's comments and marks for their assignments in a click.
 
 # For End-users
 
-End users require a hypothesis and Google Sheet account. The extension can be downloaded from [Chrome Store](https://chrome.google.com/webstore/detail/highlightgo/bihmalipgnlomidlpekdnoohiejppfmo).
+End users require a [Hypothesis](https://hypothes.is/) and [Moodle](https://moodle.org/). The extension can be downloaded from [Chrome Store](https://chrome.google.com/webstore/detail/highlightgo/bihmalipgnlomidlpekdnoohiejppfmo).
+
+# For Moodle service manager
+
+It is required that teachers have the following functionalities enabled in their moodle instance to allow Mark&Go get and push rubrics and students' feedback and marks:
+* core_grading_get_definitions
+* mod_assign_save_grade
+* core_enrol_get_enrolled_users
+
+Students don't require any special permissions.
 
 # For developers
 
