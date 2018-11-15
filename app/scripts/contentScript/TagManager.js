@@ -8,6 +8,7 @@ const Events = require('./Events')
 const Tag = require('./Tag')
 const TagGroup = require('./TagGroup')
 const Alerts = require('../utils/Alerts')
+const CircularJSON = require('circular-json-es6')
 
 class TagManager {
   constructor (namespace, config) {
@@ -225,7 +226,7 @@ class TagManager {
     return null
   }
 
-  createTagsButtonsForEvidencing (callback) {
+  createTagsButtonsForEvidencing () {
     let arrayOfTagGroups = _.values(this.model.currentTags)
     arrayOfTagGroups = _.orderBy(arrayOfTagGroups, 'config.options.criteriaId')
     for (let i = 0; i < arrayOfTagGroups.length; i++) {
@@ -244,7 +245,7 @@ class TagManager {
     }
   }
 
-  createTagsButtonsForMarking (callback) {
+  createTagsButtonsForMarking () {
     let arrayOfTagGroups = _.values(this.model.currentTags)
     arrayOfTagGroups = _.orderBy(arrayOfTagGroups, 'config.options.criteriaId')
     for (let i = 0; i < arrayOfTagGroups.length; i++) {
@@ -332,7 +333,7 @@ class TagManager {
 
   createViewingAnnotations () {
     let currentAnnotations = window.abwa.contentAnnotator.currentAnnotations
-    let tags = _.clone(this.currentTags)
+    let tags = CircularJSON.parse(CircularJSON.stringify(this.currentTags))
     // Get tag groups for each annotation
     let tagGroups = _.uniq(_.map(currentAnnotations, (annotation) => {
       return _.find(tags, (tagGroup) => {
@@ -343,17 +344,28 @@ class TagManager {
     _.forEach(tagGroups, (tagGroup) => {
       _.remove(tagGroup.tags, (tag) => {
         return _.find(currentAnnotations, (annotation) => {
-          let markTag = _.find(annotation.tags, (annoTag) => {
-            return annoTag.includes('exam:mark:')
-          }).replace('exam:mark:', '')
           let criteriaTag = _.find(annotation.tags, (annoTag) => {
             return annoTag.includes('exam:isCriteriaOf:')
           }).replace('exam:isCriteriaOf:', '')
-          return tag.name !== markTag &&
-            tag.group.config.name === criteriaTag
+          let markTag = _.find(annotation.tags, (annoTag) => {
+            return annoTag.includes('exam:mark:')
+          })
+          if (markTag) {
+            markTag = markTag.replace('exam:mark:', '')
+            return tag.name !== markTag && tag.group.config.name === criteriaTag
+          } else {
+            return tag.group.config.name === criteriaTag
+          }
         })
       })
     })
+    // Instance as class prototype
+    for (let i = 0; i < tagGroups.length; i++) {
+      tagGroups[i] = new TagGroup(tagGroups[i].config, tagGroups[i].tags)
+      for (let j = 0; j < tagGroups[i].tags.length; j++) {
+        tagGroups[i].tags[j] = Tag.getInstance(tagGroups[i].tags[j], tagGroups[i])
+      }
+    }
     // Create buttons with qualifications
     for (let i = 0; i < tagGroups.length; i++) {
       let tagGroup = tagGroups[i]

@@ -21,6 +21,18 @@ class Tag {
   getColor () {
     return this.color
   }
+
+  static getInstance (tagObject, group) {
+    let tag = new Tag({
+      name: tagObject.name,
+      namespace: tagObject.namespace,
+      options: tagObject.options
+    })
+    tag.group = group
+    tag.color = tagObject.color
+    tag.tags = tagObject.tags
+    return tag
+  }
 }
 
 module.exports = Tag
