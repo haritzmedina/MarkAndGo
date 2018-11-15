@@ -2,12 +2,21 @@
 import 'chromereload/devonly'
 
 const VersionManager = require('./background/VersionManager')
+const TourManager = require('./background/TourManager')
 
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('previousVersion', details.previousVersion)
-  // Version manager
-  let versionManager = new VersionManager()
-  versionManager.init()
+  // Tour manager
+  let tourManager = new TourManager()
+  tourManager.init((err, isShown) => {
+    // Version manager
+    let versionManager = new VersionManager()
+    if (err || !isShown) {
+      versionManager.init(details.previousVersion)
+    } else {
+      versionManager.setLatestVersion()
+    }
+  })
 })
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -24,7 +33,6 @@ const DoiManager = require('./background/DoiManager')
 const Popup = require('./popup/Popup')
 const MoodleDownloadManager = require('./background/MoodleDownloadManager')
 const MoodleBackgroundManager = require('./background/MoodleBackgroundManager')
-const TourManager = require('./background/TourManager')
 const TaskManager = require('./background/TaskManager')
 
 const _ = require('lodash')
@@ -55,10 +63,6 @@ class Background {
     // Initialize moodle background manager
     this.moodleBackgroundManager = new MoodleBackgroundManager()
     this.moodleBackgroundManager.init()
-
-    // Initialize tour manager
-    this.tourManager = new TourManager()
-    this.tourManager.init()
 
     // Initialize task manager
     this.taskManager = new TaskManager()

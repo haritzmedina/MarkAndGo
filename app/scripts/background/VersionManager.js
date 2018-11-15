@@ -5,25 +5,22 @@ const NotificationIds = {
 }
 const compareVersions = require('compare-versions')
 
-class VersionManager {
-  init () {
-    let manifestData = chrome.runtime.getManifest()
-    let currentVersion = manifestData.version
+const manifestData = chrome.runtime.getManifest()
+const currentVersion = manifestData.version
 
+class VersionManager {
+  init (callback) {
     ChromeStorage.getData('version.latest', ChromeStorage.local, (err, previousVersion) => {
       if (err) {
         // Save not to show again first time message
-        ChromeStorage.setData('version.latest', {version: currentVersion}, ChromeStorage.local, () => {
-
-        })
+        this.setLatestVersion(callback)
       } else {
+        let message = _.find(VersionManager.messages, (message) => {
+          return message.version === currentVersion
+        })
         if (previousVersion && previousVersion.version) {
+          console.debug('Previous version was: ' + previousVersion.version)
           if (compareVersions(currentVersion, previousVersion.version)) {
-            // Show notification, new version
-            console.log(VersionManager.messages[currentVersion])
-            let message = _.find(VersionManager.messages, (message) => {
-              return message.version === currentVersion
-            })
             if (message) {
               // Create notification
               chrome.notifications.create(NotificationIds.newToVersion + currentVersion, message.notification)
@@ -31,11 +28,26 @@ class VersionManager {
               chrome.notifications.onButtonClicked.addListener(message.handler)
             }
           }
+        } else {
+          if (message) {
+            // Create notification
+            chrome.notifications.create(NotificationIds.newToVersion + currentVersion, message.notification)
+            // Create handler for new version
+            chrome.notifications.onButtonClicked.addListener(message.handler)
+          }
         }
         // Save not to show again first time message
         ChromeStorage.setData('version.latest', {version: currentVersion}, ChromeStorage.local, () => {
 
         })
+      }
+    })
+  }
+
+  setLatestVersion (callback) {
+    ChromeStorage.setData('version.latest', {version: currentVersion}, ChromeStorage.local, () => {
+      if (_.isFunction(callback)) {
+        callback()
       }
     })
   }
