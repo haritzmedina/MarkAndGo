@@ -4,6 +4,7 @@ const jsYaml = require('js-yaml')
 const ModeManager = require('./ModeManager')
 const LanguageUtils = require('../utils/LanguageUtils')
 const ColorUtils = require('../utils/ColorUtils')
+const AnnotationUtils = require('../utils/AnnotationUtils')
 const Events = require('./Events')
 const Tag = require('./Tag')
 const TagGroup = require('./TagGroup')
@@ -235,13 +236,35 @@ class TagManager {
         name: tagGroup.config.name,
         color: ColorUtils.setAlphaToColor(tagGroup.config.color, 0.5),
         handler: (event) => {
+          // Check if it is already marked to get current mark
+          let currentMark = this.getCurrentMarkForCriteria(tagGroup.config.name)
           let tags = [
             this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name,
             'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
           ]
+          if (!_.isNull(currentMark)) {
+            tags.push(this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + currentMark)
+          }
           LanguageUtils.dispatchCustomEvent(Events.annotate, {tags: tags})
         }})
       this.tagsContainer.evidencing.append(button)
+    }
+  }
+
+  getCurrentMarkForCriteria (criteriaName) {
+    // TODO Get mark from any document for this student, not only in the current document ¿?
+    let otherAnnotationSameCriteria = _.find(window.abwa.contentAnnotator.currentAnnotations, (annotation) => {
+      let criteria = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
+      return criteria === criteriaName
+    })
+    if (_.isObject(otherAnnotationSameCriteria)) {
+      // Get if has mark
+      let mark = AnnotationUtils.getTagSubstringFromAnnotation(otherAnnotationSameCriteria, 'exam:mark:')
+      if (mark) {
+        return mark
+      } else {
+        return null
+      }
     }
   }
 
