@@ -238,7 +238,6 @@ class TagManager {
         handler: (event) => {
           // Check if it is already marked to get current mark
           let currentMark = this.getCurrentMarkForCriteria(tagGroup.config.name)
-          debugger
           let tags = [
             this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name,
             'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
