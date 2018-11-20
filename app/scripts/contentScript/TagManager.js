@@ -242,7 +242,7 @@ class TagManager {
             this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name,
             'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
           ]
-          if (!_.isUndefined(currentMark)) {
+          if (!_.isUndefined(currentMark) && !_.isNull(currentMark)) {
             tags.push(this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + currentMark)
           }
           LanguageUtils.dispatchCustomEvent(Events.annotate, {tags: tags})
