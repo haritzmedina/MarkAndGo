@@ -49,6 +49,22 @@ class MoodleBackgroundManager {
               }
             }
           })
+        } else if (request.cmd === 'saveGrantedPermissionMoodle') {
+          ChromeStorage.setData('moodlePermission', {saved: true}, ChromeStorage.sync, (err, consent) => {
+            if (err) {
+              sendResponse({err: err})
+            } else {
+              sendResponse({saved: true})
+            }
+          })
+        } else if (request.cmd === 'hasGrantedPermissionMoodle') {
+          ChromeStorage.getData('moodlePermission', ChromeStorage.sync, (err, consent) => {
+            if (err) {
+              sendResponse({err: err})
+            } else {
+              sendResponse({consent: consent})
+            }
+          })
         }
       }
     })
