@@ -17,9 +17,8 @@ class CreateHighlighterTask extends Task {
       let student = this.config.activities[i].data.student
       let siteUrl = new URL(rubric.moodleEndpoint)
       let courseId = this.config.activities[i].data.courseId
-      // Hypothesis Group max chars 25: 2 (mark&go) + 8 (host first chars) + 1 (course) + 6 (courseid) + 1 (student) + 7 (studentid)
-      // It will work up to moodle with 10 million users and 1 million courses
       let groupName = siteUrl.host + courseId + student.id
+      // We create a hash using the course ID and the student ID to anonymize the Hypothes.is group
       let hashedGroupName = 'MG' + CryptoUtils.hash(groupName).substring(0, 23)
       promisesData.push({rubric, groupName: hashedGroupName})
     }
