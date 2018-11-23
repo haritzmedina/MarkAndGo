@@ -3,6 +3,8 @@ const AnnotationBasedInitializer = require('./contentScript/AnnotationBasedIniti
 
 const _ = require('lodash')
 
+console.log('aa')
+
 console.debug('Loaded abwa content script')
 if (_.isEmpty(window.abwa)) {
   window.abwa = {} // Global namespace for variables
