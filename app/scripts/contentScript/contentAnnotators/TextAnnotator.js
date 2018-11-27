@@ -416,53 +416,55 @@ class TextAnnotator extends ContentAnnotator {
     let classNameToHighlight = this.retrieveHighlightClassName(annotation)
     // Get annotation color for an annotation
     let tagInstance = window.abwa.tagManager.findAnnotationTagInstance(annotation)
-    let color = tagInstance.getColor()
-    try {
-      let highlightedElements = []
-      // TODO Remove this case for google drive
-      if (window.location.href.includes('drive.google.com')) {
-        // Ensure popup exists
-        if (document.querySelector('.a-b-r-x')) {
+    if (tagInstance) {
+      let color = tagInstance.getColor()
+      try {
+        let highlightedElements = []
+        // TODO Remove this case for google drive
+        if (window.location.href.includes('drive.google.com')) {
+          // Ensure popup exists
+          if (document.querySelector('.a-b-r-x')) {
+            highlightedElements = DOMTextUtils.highlightContent(
+              annotation.target[0].selector, classNameToHighlight, annotation.id)
+          }
+        } else {
           highlightedElements = DOMTextUtils.highlightContent(
             annotation.target[0].selector, classNameToHighlight, annotation.id)
         }
-      } else {
-        highlightedElements = DOMTextUtils.highlightContent(
-          annotation.target[0].selector, classNameToHighlight, annotation.id)
-      }
-      // Highlight in same color as button
-      highlightedElements.forEach(highlightedElement => {
-        // If need to highlight, set the color corresponding to, in other case, maintain its original color
-        $(highlightedElement).css('background-color', color)
-        // Set purpose color
-        highlightedElement.dataset.color = color
-        let group = null
-        if (LanguageUtils.isInstanceOf(tagInstance, TagGroup)) {
-          group = tagInstance
-          // Set message
-          highlightedElement.title = 'Rubric competence: ' + group.config.name + '\nMark is pending, go to marking mode.'
-        } else if (LanguageUtils.isInstanceOf(tagInstance, Tag)) {
-          group = tagInstance.group
-          // Get highest mark
-          let highestMark = _.last(group.tags).name
-          highlightedElement.title = 'Rubric competence: ' + group.config.name + '\nMark: ' + tagInstance.name + ' of ' + highestMark
+        // Highlight in same color as button
+        highlightedElements.forEach(highlightedElement => {
+          // If need to highlight, set the color corresponding to, in other case, maintain its original color
+          $(highlightedElement).css('background-color', color)
+          // Set purpose color
+          highlightedElement.dataset.color = color
+          let group = null
+          if (LanguageUtils.isInstanceOf(tagInstance, TagGroup)) {
+            group = tagInstance
+            // Set message
+            highlightedElement.title = 'Rubric competence: ' + group.config.name + '\nMark is pending, go to marking mode.'
+          } else if (LanguageUtils.isInstanceOf(tagInstance, Tag)) {
+            group = tagInstance.group
+            // Get highest mark
+            let highestMark = _.last(group.tags).name
+            highlightedElement.title = 'Rubric competence: ' + group.config.name + '\nMark: ' + tagInstance.name + ' of ' + highestMark
+          }
+          if (!_.isEmpty(annotation.text)) {
+            highlightedElement.title += '\nFeedback: ' + annotation.text
+          }
+        })
+        // Create context menu event for highlighted elements
+        this.createContextMenuForAnnotation(annotation)
+        // Create click event to move to next annotation
+        this.createNextAnnotationHandler(annotation)
+      } catch (e) {
+        // TODO Handle error (maybe send in callback the error ¿?)
+        if (_.isFunction(callback)) {
+          callback(new Error('Element not found'))
         }
-        if (!_.isEmpty(annotation.text)) {
-          highlightedElement.title += '\nFeedback: ' + annotation.text
+      } finally {
+        if (_.isFunction(callback)) {
+          callback()
         }
-      })
-      // Create context menu event for highlighted elements
-      this.createContextMenuForAnnotation(annotation)
-      // Create click event to move to next annotation
-      this.createNextAnnotationHandler(annotation)
-    } catch (e) {
-      // TODO Handle error (maybe send in callback the error ¿?)
-      if (_.isFunction(callback)) {
-        callback(new Error('Element not found'))
-      }
-    } finally {
-      if (_.isFunction(callback)) {
-        callback()
       }
     }
   }
