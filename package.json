@@ -45,6 +45,7 @@
     "jquery-csv": "^0.8.9",
     "js-sha256": "^0.9.0",
     "json-form-data": "^1.3.0",
+    "jspdf": "^1.4.1",
     "lodash": "^4.17.11",
     "natives": "^1.1.6",
     "node-sass": "^4.9.4",
