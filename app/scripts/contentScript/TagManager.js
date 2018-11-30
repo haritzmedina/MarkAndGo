@@ -404,7 +404,7 @@ class TagManager {
     }
   }
 
-  createButton ({name, color = 'white', description, handler}) {
+  createButton ({name, color = 'white', description, handler, role}) {
     let tagButtonTemplate = document.querySelector('#tagButtonTemplate')
     let tagButton = $(tagButtonTemplate.content.firstElementChild).clone().get(0)
     tagButton.innerText = name
@@ -414,7 +414,7 @@ class TagManager {
       tagButton.title = name
     }
     tagButton.dataset.mark = name
-    tagButton.setAttribute('role', 'annotation')
+    tagButton.setAttribute('role', role || 'annotation')
     if (color) {
       $(tagButton).css('background-color', color)
     }
@@ -441,7 +441,8 @@ class TagManager {
           name: element.name,
           color: element.getColor(),
           description: (element.options.description || null),
-          handler: buttonHandler
+          handler: buttonHandler,
+          role: 'marking'
         })
         tagButtonContainer.append(button)
       }
