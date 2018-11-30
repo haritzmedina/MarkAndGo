@@ -91,13 +91,14 @@ class Alerts {
     }
   }
 
-  static loadingAlert ({text = 'If it takes too much time, please reload the page and try again.', position = 'top-end', title = 'Working on something, please be patient', confirmButton = false, callback}) {
+  static loadingAlert ({text = 'If it takes too much time, please reload the page and try again.', position = 'top-end', title = 'Working on something, please be patient', confirmButton = false, timerIntervalHandler, callback}) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
       if (_.isFunction(callback)) {
         callback(new Error('Unable to load swal'))
       }
     } else {
+      let timerInterval
       swal({
         position: position,
         title: title,
@@ -105,6 +106,14 @@ class Alerts {
         showConfirmButton: confirmButton,
         onOpen: () => {
           swal.showLoading()
+          if (_.isFunction(timerIntervalHandler)) {
+            timerInterval = setInterval(() => {
+              timerIntervalHandler(swal)
+            }, 100)
+          }
+        },
+        onClose: () => {
+          clearInterval(timerInterval)
         }
       })
     }
@@ -155,6 +164,10 @@ class Alerts {
         html: text
       })
     }
+  }
+
+  static closeAlert () {
+    swal.close()
   }
 }
 

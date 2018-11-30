@@ -4,6 +4,7 @@ const FileSaver = require('file-saver')
 const $ = require('jquery')
 const _ = require('lodash')
 const JsPDF = require('jspdf')
+const Alerts = require('../../utils/Alerts')
 
 class Screenshots {
   constructor () {
@@ -43,41 +44,61 @@ class Screenshots {
         }
       })
     } else if (window.location.pathname === '/content/pdfjs/web/viewer.html') {
-      // Create promises array
-      let promisesData = [...Array(window.PDFViewerApplication.pagesCount).keys()].map((index) => { return {i: index} })
-
-      let takePDFPageScreenshot = (d, chaindata) => {
-        return new Promise((resolve, reject) => {
-          // Go to page
-          window.PDFViewerApplication.page = d.i + 1
-          // Redraw annotations
-          window.abwa.contentAnnotator.redrawAnnotations()
-          setTimeout(() => {
-            html2canvas(document.querySelector('.page[data-page-number="' + (d.i + 1) + '"]')).then((canvas) => {
-              chaindata.push(canvas)
-              resolve(chaindata)
+      Alerts.confirmAlert({
+        alertType: Alerts.alertType.info,
+        title: 'Screenshots for PDFs is a beta feature',
+        text: 'This feature is currently in a development status, it can work in a unexpected way',
+        callback: () => {
+          Alerts.loadingAlert({
+            title: 'Please hold on',
+            text: 'We are creating the screenshot (<span></span> of ' + window.PDFViewerApplication.pagesCount + ')',
+            timerIntervalHandler: (swal) => {
+              swal.getContent().querySelector('span').textContent = window.PDFViewerApplication.page
+            }
+          })
+          // Create pdf file
+          let pdf = new JsPDF('p', 'pt', 'a4', true)
+          // Go to first page
+          window.PDFViewerApplication.page = 1
+          // Append rubric
+          window.abwa.tagManager.showViewingTagsContainer()
+          html2canvas(document.querySelector('#tagsViewing')).then((rubric) => {
+            window.abwa.tagManager.showEvidencingTagsContainer()
+            pdf.addImage(rubric.toDataURL(), 'png', 0, 0)
+          })
+          // Create promises array
+          let promisesData = [...Array(window.PDFViewerApplication.pagesCount).keys()].map((index) => { return {i: index} })
+          // Page screenshot promise
+          let takePDFPageScreenshot = (d) => {
+            return new Promise((resolve, reject) => {
+              // Go to page
+              window.PDFViewerApplication.page = d.i + 1
+              // Redraw annotations
+              window.abwa.contentAnnotator.redrawAnnotations()
+              setTimeout(() => {
+                html2canvas(document.querySelector('.page[data-page-number="' + (d.i + 1) + '"]'), {scale: 1}).then((canvas) => {
+                  resolve()
+                  pdf.addPage()
+                  pdf.addImage(canvas.toDataURL(), 'png', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), '', 'FAST')
+                })
+              }, 500)
             })
-          }, 1000)
-        })
-      }
-
-      let promiseChain = promisesData.reduce(
-        (chain, d) => chain.then((chaindata) => {
-          return takePDFPageScreenshot(d, chaindata)
-        }), Promise.resolve([])
-      )
-      promiseChain.then((canvases) => {
-        let pdf = new JsPDF('p', 'pt', 'a4')
-        window.abwa.tagManager.showViewingTagsContainer()
-        html2canvas(document.querySelector('#tagsViewing')).then((rubric) => {
-          pdf.addImage(rubric.toDataURL(), 'png', 0, 0)
-          window.abwa.tagManager.showEvidencingTagsContainer()
-          for (let i = 0; i < canvases.length; i++) {
-            pdf.addPage()
-            pdf.addImage(canvases[i].toDataURL(), 'png', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight())
           }
-          pdf.save()
-        })
+          // Wait a little bit to draw annotations in first page
+          setTimeout(() => {
+            // Reduce promise chain
+            let promiseChain = promisesData.reduce(
+              (chain, d) => chain.then(() => {
+                return takePDFPageScreenshot(d)
+              }), Promise.resolve([])
+            )
+            // To execute after promise chain is finished
+            promiseChain.then((canvases) => {
+              Alerts.closeAlert()
+              pdf.save('activity.pdf')
+            })
+          }, 2000)
+        }
       })
     } else {
       promise = new Promise((resolve) => {
