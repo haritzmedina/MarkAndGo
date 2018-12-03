@@ -2,6 +2,7 @@ const GuideElement = require('./GuideElement')
 const jsYaml = require('js-yaml')
 const _ = require('lodash')
 const Level = require('./Level')
+const LanguageUtils = require('../utils/LanguageUtils')
 
 class Criteria extends GuideElement {
   constructor ({name, color, criteriaId, rubric}) {
@@ -30,7 +31,7 @@ class Criteria extends GuideElement {
         read: ['group:' + rubric.hypothesisGroup.id]
       },
       references: [],
-      tags: ['exam:criteria:' + this.name, 'exam:cmid:' + rubric.cmid],
+      tags: ['exam:criteria:' + LanguageUtils.normalizeString(this.name), 'exam:cmid:' + rubric.cmid],
       target: [],
       text: jsYaml.dump({criteriaId: this.criteriaId}),
       uri: rubric.hypothesisGroup.links ? rubric.hypothesisGroup.links.html : rubric.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile

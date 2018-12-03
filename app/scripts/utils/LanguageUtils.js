@@ -111,6 +111,15 @@ class LanguageUtils {
       }
     })
   }
+
+  /**
+   * Normalize strings removing tildes, etc.
+   * @param string
+   * @returns {*}
+   */
+  static normalizeString (string) {
+    return string.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  }
 }
 
 module.exports = LanguageUtils
