@@ -1,6 +1,7 @@
 const _ = require('lodash')
 const $ = require('jquery')
 const Alerts = require('../utils/Alerts')
+const CryptoUtils = require('../utils/CryptoUtils')
 
 class GroupSelector {
   constructor () {
@@ -29,14 +30,15 @@ class GroupSelector {
   }
   defineCurrentGroup (callback) {
     let fileMetadata = window.abwa.contentTypeManager.fileMetadata
-    // Get group name from filemetadata
-    let groupName = 'MG' + (new URL(fileMetadata.url)).host.substr(0, 8) + 'C' + fileMetadata.courseId.substring(0, 6) + 'S' + (fileMetadata.studentId + '').substring(0, 7)
+    // Get group name from file metadata
+    let groupName = (new URL(fileMetadata.url)).host + fileMetadata.courseId + fileMetadata.studentId
+    let hashedGroupName = 'MG' + CryptoUtils.hash(groupName).substring(0, 23)
     // Load all the groups belonged to current user
     this.retrieveHypothesisGroups((err, groups) => {
       if (err) {
 
       } else {
-        let group = _.find(groups, (group) => { return group.name === groupName })
+        let group = _.find(groups, (group) => { return group.name === hashedGroupName })
         if (_.isObject(group)) {
           // Current group will be that group
           this.currentGroup = group

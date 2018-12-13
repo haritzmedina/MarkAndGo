@@ -5,13 +5,16 @@ const NotificationIds = {
 }
 
 class TourManager {
-  init () {
+  init (callback) {
     ChromeStorage.getData('tour', ChromeStorage.local, (err, tour) => {
       if (err) {
 
       } else {
         if (_.isObject(tour) && tour.firstTime === true) {
           // Nothing to do
+          if (_.isFunction(callback)) {
+            callback(null, false)
+          }
         } else {
           // Show first time message
           chrome.notifications.create(NotificationIds.tour, {
@@ -26,7 +29,9 @@ class TourManager {
           })
           // Save not to show again first time message
           ChromeStorage.setData('tour', {firstTime: true}, ChromeStorage.local, () => {
-
+            if (_.isFunction(callback)) {
+              callback(null, true)
+            }
           })
         }
       }

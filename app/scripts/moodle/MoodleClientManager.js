@@ -1,6 +1,7 @@
 const MoodleClient = require('./MoodleClient')
 const _ = require('lodash')
 const MoodleFunctions = require('./MoodleFunctions')
+const APISimulation = require('./APISimulation')
 
 class MoodleClientManager {
   constructor (moodleEndPoint) {
@@ -28,13 +29,20 @@ class MoodleClientManager {
 
   getRubric (cmids, callback) {
     if (_.isFunction(callback)) {
-      let token = this.getTokenFor(MoodleFunctions.getRubric.wsFunc)
-      if (_.isString(token)) {
-        this.moodleClient.updateToken(token)
-        this.moodleClient.getRubric(cmids, callback)
-      } else {
-        callback(new Error('NoPermissions'))
-      }
+      // Check if API simulation is enabled
+      chrome.runtime.sendMessage({scope: 'moodle', cmd: 'isApiSimulationActivated'}, (isActivated) => {
+        if (isActivated.activated) {
+          APISimulation.getRubric(cmids, callback)
+        } else {
+          let token = this.getTokenFor(MoodleFunctions.getRubric.wsFunc)
+          if (_.isString(token)) {
+            this.moodleClient.updateToken(token)
+            this.moodleClient.getRubric(cmids, callback)
+          } else {
+            callback(new Error('NoPermissions'))
+          }
+        }
+      })
     }
   }
 

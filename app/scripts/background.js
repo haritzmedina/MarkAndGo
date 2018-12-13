@@ -2,12 +2,21 @@
 import 'chromereload/devonly'
 
 const VersionManager = require('./background/VersionManager')
+const TourManager = require('./background/TourManager')
 
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('previousVersion', details.previousVersion)
-  // Version manager
-  let versionManager = new VersionManager()
-  versionManager.init()
+  // Tour manager
+  let tourManager = new TourManager()
+  tourManager.init((err, isShown) => {
+    // Version manager
+    let versionManager = new VersionManager()
+    if (err || !isShown) {
+      versionManager.init(details.previousVersion)
+    } else {
+      versionManager.setLatestVersion()
+    }
+  })
 })
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -15,16 +24,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 })
 
 chrome.tabs.onCreated.addListener((tab) => {
-  // Retrieve saved clicked doi element
+
 })
 
 const HypothesisManager = require('./background/HypothesisManager')
 const GoogleSheetsManager = require('./background/GoogleSheetsManager')
-const DoiManager = require('./background/DoiManager')
 const Popup = require('./popup/Popup')
 const MoodleDownloadManager = require('./background/MoodleDownloadManager')
 const MoodleBackgroundManager = require('./background/MoodleBackgroundManager')
-const TourManager = require('./background/TourManager')
 const TaskManager = require('./background/TaskManager')
 
 const _ = require('lodash')
@@ -44,10 +51,6 @@ class Background {
     this.googleSheetsManager = new GoogleSheetsManager()
     this.googleSheetsManager.init()
 
-    // Initialize doi manager
-    this.doiManager = new DoiManager()
-    this.doiManager.init()
-
     // Initialize moodle download manager
     this.moodleDownloadManager = new MoodleDownloadManager()
     this.moodleDownloadManager.init()
@@ -56,25 +59,42 @@ class Background {
     this.moodleBackgroundManager = new MoodleBackgroundManager()
     this.moodleBackgroundManager.init()
 
-    // Initialize tour manager
-    this.tourManager = new TourManager()
-    this.tourManager.init()
-
     // Initialize task manager
     this.taskManager = new TaskManager()
     this.taskManager.init()
 
     // Initialize page_action event handler
     chrome.pageAction.onClicked.addListener((tab) => {
-      if (this.tabs[tab.id]) {
-        if (this.tabs[tab.id].activated) {
-          this.tabs[tab.id].deactivate()
+      // Check if current tab is a local file
+      if (tab.url.startsWith('file://')) {
+        // Check if permission to access file URL is enabled
+        chrome.extension.isAllowedFileSchemeAccess((isAllowedAccess) => {
+          if (isAllowedAccess === false) {
+            chrome.tabs.create({url: chrome.runtime.getURL('pages/filePermission.html')})
+          } else {
+            if (this.tabs[tab.id]) {
+              if (this.tabs[tab.id].activated) {
+                this.tabs[tab.id].deactivate()
+              } else {
+                this.tabs[tab.id].activate()
+              }
+            } else {
+              this.tabs[tab.id] = new Popup()
+              this.tabs[tab.id].activate()
+            }
+          }
+        })
+      } else {
+        if (this.tabs[tab.id]) {
+          if (this.tabs[tab.id].activated) {
+            this.tabs[tab.id].deactivate()
+          } else {
+            this.tabs[tab.id].activate()
+          }
         } else {
+          this.tabs[tab.id] = new Popup()
           this.tabs[tab.id].activate()
         }
-      } else {
-        this.tabs[tab.id] = new Popup()
-        this.tabs[tab.id].activate()
       }
     })
     // On tab is reloaded
