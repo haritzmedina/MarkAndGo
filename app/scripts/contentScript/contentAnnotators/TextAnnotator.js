@@ -4,9 +4,10 @@ const ContentTypeManager = require('../ContentTypeManager')
 const Tag = require('../Tag')
 const TagGroup = require('../TagGroup')
 const Events = require('../Events')
+const RolesManager = require('../RolesManager')
 const DOMTextUtils = require('../../utils/DOMTextUtils')
+const AnnotationUtils = require('../../utils/AnnotationUtils')
 const LanguageUtils = require('../../utils/LanguageUtils')
-const Config = require('../../Config')
 const $ = require('jquery')
 require('jquery-contextmenu/dist/jquery.contextMenu')
 const _ = require('lodash')
@@ -379,6 +380,10 @@ class TextAnnotator extends ContentAnnotator {
           callback(err)
         }
       } else {
+        // Get reply annotations
+        this.replyAnnotations = _.remove(annotations, (annotation) => {
+          return annotation.references && annotation.references.length > 0
+        })
         // Search tagged annotations
         let filteringTags = window.abwa.tagManager.getFilteringTagList()
         let filteredAnnotations = _.filter(annotations, (annotation) => {
@@ -505,90 +510,173 @@ class TextAnnotator extends ContentAnnotator {
         // Create items for context menu
         let items = {}
         // If current user is the same as author, allow to remove annotation or add a comment
-        if (this.currentUserProfile.userid === annotation.user) {
-          items['comment'] = {name: 'Comment'}
-          items['delete'] = {name: 'Delete annotation'}
-        }
-        // Add validate item for SLR
-        if (this.config.namespace === Config.slrDataExtraction.namespace) {
-          if (window.abwa.modeManager.mode === ModeManager.modes.index) {
-            if (_.isObject(items['delete'])) {
-              items['sep1'] = '---------'
-            }
-            items['validate'] = {name: 'Validate classification'}
+        if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
+          // TODO If a reply already exist
+          let reply = false
+          if (reply) {
+            items['reply'] = {name: 'Reply'}
+          } else {
+            items['comment'] = {name: 'Comment'}
           }
+          items['delete'] = {name: 'Delete annotation'}
+        } else if (window.abwa.roleManager.role === RolesManager.roles.student) {
+          items['reply'] = {name: 'Reply'}
         }
         return {
           callback: (key) => {
             if (key === 'delete') {
-              // Delete annotation
-              window.abwa.hypothesisClientManager.hypothesisClient.deleteAnnotation(annotation.id, (err, result) => {
-                if (err) {
-                  // Unable to delete this annotation
-                  console.error('Error while trying to delete annotation %s', annotation.id)
-                } else {
-                  if (!result.deleted) {
-                    // Alert user error happened
-                    Alerts.errorAlert({text: chrome.i18n.getMessage('errorDeletingHypothesisAnnotation')})
-                  } else {
-                    // Remove annotation from data model
-                    _.remove(this.currentAnnotations, (currentAnnotation) => {
-                      return currentAnnotation.id === annotation.id
-                    })
-                    LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
-                    _.remove(this.allAnnotations, (currentAnnotation) => {
-                      return currentAnnotation.id === annotation.id
-                    })
-                    LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
-                    // Dispatch deleted annotation event
-                    LanguageUtils.dispatchCustomEvent(Events.annotationDeleted, {annotation: annotation})
-                    // Unhighlight annotation highlight elements
-                    DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
-                    console.debug('Deleted annotation ' + annotation.id)
-                  }
-                }
-              })
+              this.deleteAnnotationHandler(annotation)
             } else if (key === 'comment') {
-              // Close sidebar if opened
-              let isSidebarOpened = window.abwa.sidebar.isOpened()
-              this.closeSidebar()
-              // Open sweetalert
-              Alerts.inputTextAlert({
-                input: 'textarea',
-                inputPlaceholder: annotation.text || 'Type your feedback here...',
-                inputValue: annotation.text || '',
-                callback: (err, result) => {
-                  if (err) {
-                    window.alert('Unable to load alert. Is this an annotable document?')
-                  } else {
-                    // Update annotation
-                    annotation.text = result || ''
-                    window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
-                      annotation.id,
-                      annotation,
-                      (err, annotation) => {
-                        if (err) {
-                          // Show error message
-                          Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
-                        } else {
-                          // Dispatch updated annotations events
-                          LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
-                          LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
-                          LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
-                          // Redraw annotations
-                          DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
-                          this.highlightAnnotation(annotation)
-                        }
-                      })
-                    if (isSidebarOpened) {
-                      this.openSidebar()
-                    }
-                  }
-                }
-              })
+              this.commentAnnotationHandler(annotation)
+            } else if (key === 'reply') {
+              this.replyAnnotationHandler(annotation)
             }
           },
           items: items
+        }
+      }
+    })
+  }
+
+  replyAnnotationHandler (annotation) {
+    // Get annotations replying current annotation
+    let repliesData = this.createRepliesData(annotation)
+    let inputValue = ''
+    if (_.last(repliesData.replies) && _.last(repliesData.replies).user === window.abwa.groupSelector.user.userid) {
+      inputValue = _.last(repliesData.replies).text
+    }
+
+    Alerts.inputTextAlert({
+      input: 'textarea',
+      inputPlaceholder: inputValue || 'Type your reply here...',
+      inputValue: inputValue || '',
+      html: repliesData.htmlText,
+      callback: (err, result) => {
+        if (err) {
+
+        } else {
+          if (_.isEmpty(inputValue)) {
+            // The comment you are writing is new
+
+            window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation({
+              references: []
+            }, () => {
+
+            })
+          } else {
+            // The comment you are writing is a modification of the latest one
+
+          }
+          console.log(result)
+        }
+      }
+    })
+  }
+
+  createRepliesData (annotation) {
+    let replies = _.filter(this.replyAnnotations, (replyAnnotation) => {
+      return AnnotationUtils.isReplyOf(annotation, replyAnnotation)
+    })
+    replies = _.orderBy(replies, 'updated')
+    // What and who
+    let htmlText = ''
+    for (let i = 0; i < replies.length - 1; i++) {
+      let reply = replies[i]
+      htmlText += this.createReplyLog(reply)
+      if (replies.length - 2 > i) {
+        htmlText += '<hr/>'
+      }
+    }
+    // If last reply is from current user, don't show it in reply chain, it will be shown as comment to be edited
+    let lastReply = _.last(replies)
+    if (lastReply) {
+      if (lastReply.user !== window.abwa.groupSelector.user.userid) {
+        htmlText += '<hr/>'
+        htmlText += this.createReplyLog(lastReply)
+      }
+    }
+    return {htmlText: htmlText, replies: replies}
+  }
+
+  createReplyLog (reply) {
+    let htmlText = ''
+    // Add user name
+    if (reply.user === window.abwa.groupSelector.user.userid) {
+      htmlText += '<span class="reply_user">You: </span>'
+    } else {
+      let username = reply.user.split('acct:')[1].split('@hypothes.is')[0]
+      htmlText += '<span class="reply_user">' + username + ': </span>'
+    }
+    // Add comment
+    htmlText += '<span class="reply_text">' + reply.text + '</span>'
+    return htmlText
+  }
+
+  deleteAnnotationHandler (annotation) {
+    // Delete annotation
+    window.abwa.hypothesisClientManager.hypothesisClient.deleteAnnotation(annotation.id, (err, result) => {
+      if (err) {
+        // Unable to delete this annotation
+        console.error('Error while trying to delete annotation %s', annotation.id)
+      } else {
+        if (!result.deleted) {
+          // Alert user error happened
+          Alerts.errorAlert({text: chrome.i18n.getMessage('errorDeletingHypothesisAnnotation')})
+        } else {
+          // Remove annotation from data model
+          _.remove(this.currentAnnotations, (currentAnnotation) => {
+            return currentAnnotation.id === annotation.id
+          })
+          LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
+          _.remove(this.allAnnotations, (currentAnnotation) => {
+            return currentAnnotation.id === annotation.id
+          })
+          LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
+          // Dispatch deleted annotation event
+          LanguageUtils.dispatchCustomEvent(Events.annotationDeleted, {annotation: annotation})
+          // Unhighlight annotation highlight elements
+          DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
+          console.debug('Deleted annotation ' + annotation.id)
+        }
+      }
+    })
+  }
+
+  commentAnnotationHandler (annotation) {
+    // Close sidebar if opened
+    let isSidebarOpened = window.abwa.sidebar.isOpened()
+    this.closeSidebar()
+    // Open sweetalert
+    Alerts.inputTextAlert({
+      input: 'textarea',
+      inputPlaceholder: annotation.text || 'Type your feedback here...',
+      inputValue: annotation.text || '',
+      callback: (err, result) => {
+        if (err) {
+          window.alert('Unable to load alert. Is this an annotable document?')
+        } else {
+          // Update annotation
+          annotation.text = result || ''
+          window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
+            annotation.id,
+            annotation,
+            (err, annotation) => {
+              if (err) {
+                // Show error message
+                Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
+              } else {
+                // Dispatch updated annotations events
+                LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
+                LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
+                LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
+                // Redraw annotations
+                DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
+                this.highlightAnnotation(annotation)
+              }
+            })
+          if (isSidebarOpened) {
+            this.openSidebar()
+          }
         }
       }
     })

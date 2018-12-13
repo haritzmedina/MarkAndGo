@@ -15,6 +15,14 @@ class AnnotationUtils {
       return null
     }
   }
+
+  static isReplyOf (formerAnnotation, replyAnnotation) {
+    if (_.has(replyAnnotation, 'references')) {
+      return !!_.find(replyAnnotation.references, (ref) => { return ref === formerAnnotation.id })
+    } else {
+      return false
+    }
+  }
 }
 
 module.exports = AnnotationUtils
