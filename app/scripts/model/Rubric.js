@@ -6,14 +6,13 @@ const _ = require('lodash')
 const LanguageUtils = require('../utils/LanguageUtils')
 
 class Rubric extends AnnotationGuide {
-  constructor ({moodleEndpoint, assignmentId, assignmentName, hypothesisGroup, cmid, courseId, contextId}) {
+  constructor ({moodleEndpoint, assignmentId, assignmentName, hypothesisGroup, cmid, courseId}) {
     super({name: assignmentName, hypothesisGroup})
     this.moodleEndpoint = moodleEndpoint
     this.assignmentId = assignmentId
     this.criterias = this.guideElements
     this.cmid = cmid
     this.courseId = courseId
-    this.contextId = contextId // Used to allow users to add comments in moodle
   }
 
   toAnnotations () {
@@ -39,8 +38,7 @@ class Rubric extends AnnotationGuide {
       text: jsYaml.dump({
         moodleEndpoint: this.moodleEndpoint,
         assignmentId: this.assignmentId,
-        courseId: this.courseId,
-        contextId: this.contextId
+        courseId: this.courseId
       }),
       uri: this.hypothesisGroup.links ? this.hypothesisGroup.links.html : this.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile
     }
