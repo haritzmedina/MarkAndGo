@@ -386,11 +386,10 @@ class TextAnnotator extends ContentAnnotator {
         })
         // Search tagged annotations
         let filteringTags = window.abwa.tagManager.getFilteringTagList()
-        let filteredAnnotations = _.filter(annotations, (annotation) => {
+        this.allAnnotations = _.filter(annotations, (annotation) => {
           let tags = annotation.tags
           return !(tags.length > 0 && _.find(filteringTags, tags[0])) || (tags.length > 1 && _.find(filteringTags, tags[1]))
         })
-        this.allAnnotations = filteredAnnotations
         LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
         if (_.isFunction(callback)) {
           callback(null, this.allAnnotations)
@@ -511,9 +510,9 @@ class TextAnnotator extends ContentAnnotator {
         let items = {}
         // If current user is the same as author, allow to remove annotation or add a comment
         if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
-          // TODO If a reply already exist
-          let reply = false
-          if (reply) {
+          //  If a reply already exist show reply, otherwise show comment
+          let replies = this.getRepliesForAnnotation(annotation)
+          if (replies.length > 0) {
             items['reply'] = {name: 'Reply'}
           } else {
             items['comment'] = {name: 'Comment'}
@@ -557,15 +556,42 @@ class TextAnnotator extends ContentAnnotator {
         } else {
           if (_.isEmpty(inputValue)) {
             // The comment you are writing is new
-
-            window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation({
-              references: []
-            }, () => {
-
+            let replyAnnotationData = TextAnnotator.constructAnnotation()
+            // Add text
+            replyAnnotationData.text = result
+            // Add its reference (the annotation that replies to
+            replyAnnotationData.references = [annotation.id]
+            window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(replyAnnotationData, (err, replyAnnotation) => {
+              if (err) {
+                // Show error when creating annotation
+                Alerts.errorAlert({text: 'There was an error when replying, please try again. Make sure you are logged in Hypothes.is.'})
+              } else {
+                // Dispatch event of new reply is created
+                LanguageUtils.dispatchCustomEvent(Events.reply, {
+                  replyType: 'new',
+                  annotation: annotation,
+                  replyAnnotation: replyAnnotation
+                })
+              }
             })
           } else {
             // The comment you are writing is a modification of the latest one
+            window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(_.last(repliesData.replies).id, {
 
+            }, (err, replyAnnotation) => {
+              if (err) {
+                // Show error when updating annotation
+                Alerts.errorAlert({text: 'There was an error when editing your reply, please try again. Make sure you are logged in Hypothes.is.'})
+              } else {
+                // TODO Remove the comment and create the new one in moodle
+                LanguageUtils.dispatchCustomEvent(Events.reply, {
+                  replyType: 'update',
+                  annotation: annotation,
+                  replyAnnotation: replyAnnotation,
+                  originalText: inputValue
+                })
+              }
+            })
           }
           console.log(result)
         }
@@ -574,10 +600,7 @@ class TextAnnotator extends ContentAnnotator {
   }
 
   createRepliesData (annotation) {
-    let replies = _.filter(this.replyAnnotations, (replyAnnotation) => {
-      return AnnotationUtils.isReplyOf(annotation, replyAnnotation)
-    })
-    replies = _.orderBy(replies, 'updated')
+    let replies = this.getRepliesForAnnotation(annotation)
     // What and who
     let htmlText = ''
     for (let i = 0; i < replies.length - 1; i++) {
@@ -596,6 +619,14 @@ class TextAnnotator extends ContentAnnotator {
       }
     }
     return {htmlText: htmlText, replies: replies}
+  }
+
+  getRepliesForAnnotation (annotation) {
+    let replies = _.filter(this.replyAnnotations, (replyAnnotation) => {
+      return AnnotationUtils.isReplyOf(annotation, replyAnnotation)
+    })
+    replies = _.orderBy(replies, 'updated')
+    return replies
   }
 
   createReplyLog (reply) {

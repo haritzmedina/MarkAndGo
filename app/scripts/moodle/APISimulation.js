@@ -1,5 +1,6 @@
 const axios = require('axios')
 const _ = require('lodash')
+const jsonFormData = require('json-form-data')
 
 class APISimulation {
   static getRubric (cmids, callback) {
@@ -80,6 +81,113 @@ class APISimulation {
     } else {
       return null
     }
+  }
+
+  static addSubmissionComment (moodleEndpoint, data, callback) {
+    // Retrieve session key
+    APISimulation.getCurrentSessionKey(moodleEndpoint, (err, sessionKey) => {
+      if (err) {
+        callback(err)
+      } else {
+        // Retrieve client_id for comment
+        /* APISimulation.getClientIdForComment({
+          moodleEndpoint, cmid: data.cmid, studentId: data.studentId, isTeacher: data.isTeacher
+        }, (err, clientId) => {
+
+        }) */
+        let settings = {
+          'async': true,
+          'crossDomain': true,
+          'url': moodleEndpoint + '/comment/comment_ajax.php',
+          'method': 'POST',
+          'headers': {
+            'Cache-Control': 'no-cache',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+          },
+          'params': {
+            'wsfunction': 'mod_assign_save_grade',
+            'moodlewsrestformat': 'json'
+          },
+          'data': {
+            'sesskey': sessionKey,
+            'action': 'add',
+            'client_id': '5c124b5dd5125', // TODO Check if it works in all moodle versions: It is a random client ID
+            'itemid': data.itemId,
+            'area': 'submission_comments',
+            'courseid': data.courseId,
+            'contextid': data.contextId,
+            'component': 'assignsubmission_comments',
+            'content': data.text
+          },
+          'transformRequest': [(data) => {
+            return jsonFormData(data)
+          }]
+        }
+        axios(settings).then((response) => {
+          callback(null, response.data)
+        })
+      }
+    })
+  }
+
+  static getCurrentSessionKey (moodleEndpoint, callback) {
+    let settings = {
+      'async': true,
+      'crossDomain': true,
+      'url': moodleEndpoint + '/my/',
+      'method': 'GET',
+      'headers': {
+        'Cache-Control': 'no-cache'
+      }
+    }
+
+    axios(settings).then((response) => {
+      let parser = new window.DOMParser()
+      let docPreferences = parser.parseFromString(response.data, 'text/html')
+      let sessionKeyInput = docPreferences.querySelector('input[name="sesskey"]')
+      if (_.isElement(sessionKeyInput)) {
+        callback(null, sessionKeyInput.value)
+      } else {
+        callback(new Error('You are not logged in moodle, please login and try it again.'))
+      }
+    })
+  }
+
+  static getClientIdForComment ({moodleEndpoint, isTeacher, cmid, studentId}, callback) {
+    let settings = {
+      'async': true,
+      'crossDomain': true,
+      'method': 'GET',
+      'headers': {
+        'Cache-Control': 'no-cache'
+      }
+    }
+    if (isTeacher) {
+      settings.url = moodleEndpoint + '/mod/assign/view.php?id=' + cmid + '&rownum=0&action=grader&userid=' + studentId
+    } else {
+      settings.url = moodleEndpoint + '/mod/assign/view.php?id=' + cmid
+    }
+    axios(settings).then((response) => {
+      let parser = new window.DOMParser()
+      let docPreferences = parser.parseFromString(response.data, 'text/html')
+      let clientIdContainer = docPreferences.evaluate("//script[contains(., 'client_id')]", document, null, window.XPathResult.ANY_TYPE, null).iterateNext()
+      if (clientIdContainer) {
+        try {
+          let clientId = clientIdContainer.innerText.split('client_id":"')[1].split('","commentarea')[0]
+          callback(null, clientId)
+        } catch (err) {
+          callback(err)
+        }
+      }
+    })
+  }
+
+  static removeSubmissionComment () {
+
+  }
+
+  static getSubmissionComments () {
+
   }
 
   static constructGetRubricResponse ({cmid, rubricCriteria, assignmentId, assignmentName = ''}) {

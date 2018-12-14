@@ -5,6 +5,7 @@ const Screenshots = require('./Screenshots')
 const Config = require('../../Config')
 const BackToWorkspace = require('./BackToWorkspace')
 const MoodleGradingManager = require('./MoodleGradingManager')
+const MoodleCommentManager = require('./MoodleCommentManager')
 
 class ExamDataExtractionContentScript {
   init (callback) {
@@ -38,6 +39,9 @@ class ExamDataExtractionContentScript {
             callback()
           }
         }
+        // Enable handler for replies
+        window.abwa.specific.moodleCommentManager = new MoodleCommentManager()
+        window.abwa.specific.moodleCommentManager.init()
       }
     })
   }

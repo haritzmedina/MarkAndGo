@@ -120,6 +120,20 @@ class LanguageUtils {
   static normalizeString (string) {
     return string.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   }
+
+  static getStringBetween (string, previous, after) {
+    let firstSplit = string.split(previous)
+    if (firstSplit.length > 1) {
+      let secondSplit = firstSplit.pop().split(after)
+      if (secondSplit.length > 1) {
+        return secondSplit[0]
+      } else {
+        return null
+      }
+    } else {
+      return null
+    }
+  }
 }
 
 module.exports = LanguageUtils

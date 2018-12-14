@@ -1,5 +1,6 @@
 const Events = require('../../contentScript/Events')
 const MoodleClientManager = require('../../moodle/MoodleClientManager')
+const MoodleUtils = require('../../moodle/MoodleUtils')
 const _ = require('lodash')
 const Alerts = require('../../utils/Alerts')
 const AnnotationUtils = require('../../utils/AnnotationUtils')
@@ -84,7 +85,7 @@ class MoodleGradingManager {
                 } else {
                   levelName = null
                 }
-                let url = annotation.uri + '#studentId:' + studentId + '&mag:' + annotation.id + '&courseId:' + window.abwa.rubricManager.rubric.courseId + '&cmid:' + window.abwa.rubricManager.rubric.cmid
+                let url = MoodleUtils.createURLForAnnotation({annotation, studentId, courseId: window.abwa.rubricManager.rubric.courseId, cmid: window.abwa.rubricManager.rubric.cmid})
                 // Construct feedback
                 let text = annotation.text
                 let feedbackCommentElement = ''

@@ -2,6 +2,7 @@ const MoodleClient = require('./MoodleClient')
 const _ = require('lodash')
 const MoodleFunctions = require('./MoodleFunctions')
 const APISimulation = require('./APISimulation')
+const RolesManager = require('../contentScript/RolesManager')
 
 class MoodleClientManager {
   constructor (moodleEndPoint) {
@@ -81,6 +82,26 @@ class MoodleClientManager {
     } else {
       return null
     }
+  }
+
+  addSubmissionComment ({courseId, studentId, text, callback}) {
+    APISimulation.addSubmissionComment(this.moodleEndpoint, {
+      courseId,
+      studentId,
+      text,
+      isTeacher: window.abwa.roleManager.role === RolesManager.roles.teacher,
+      callback,
+      contextId: window.abwa.contentTypeManager.fileMetadata.contextId,
+      itemId: window.abwa.contentTypeManager.fileMetadata.itemId
+    })
+  }
+
+  removeSubmissionComment () {
+
+  }
+
+  getSubmissionComments () {
+
   }
 }
 

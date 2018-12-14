@@ -9,7 +9,8 @@ const Events = {
   updatedAllAnnotations: 'updatedAllAnnotations',
   updatedCurrentAnnotations: 'updatedCurrentAnnotations',
   updatedDocumentURL: 'updatedDocumentURL',
-  comment: 'annotationComment'
+  comment: 'annotationComment',
+  reply: 'reply'
 }
 
 module.exports = Events

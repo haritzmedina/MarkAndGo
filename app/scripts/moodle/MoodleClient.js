@@ -53,7 +53,6 @@ class MoodleClient {
       'method': 'POST',
       'headers': {
         'Cache-Control': 'no-cache',
-        'Postman-Token': 'c114b8ee-4225-4947-b8ac-5ab48e7b657a',
         'Content-Type': 'multipart/form-data'
       },
       'params': {

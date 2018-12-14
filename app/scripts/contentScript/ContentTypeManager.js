@@ -54,6 +54,7 @@ class ContentTypeManager {
                 } else {
                   this.fileMetadata = fileMetadata.file
                   this.documentURL = fileMetadata.file.url
+                  this.getContextAndItemIdInLocalFile()
                 }
                 if (_.isFunction(callback)) {
                   callback()
@@ -87,6 +88,7 @@ class ContentTypeManager {
               } else {
                 this.fileMetadata = fileMetadata.file
                 this.documentURL = fileMetadata.file.url
+                this.getContextAndItemIdInLocalFile()
               }
               if (_.isFunction(callback)) {
                 callback()
@@ -115,6 +117,11 @@ class ContentTypeManager {
       }
     }
     clearInterval(this.urlChangeInterval)
+  }
+
+  getContextAndItemIdInLocalFile () {
+    this.fileMetadata.contextId = LanguageUtils.getStringBetween(this.fileMetadata.url, 'pluginfile.php/', '/assignsubmission_file')
+    this.fileMetadata.itemId = LanguageUtils.getStringBetween(this.fileMetadata.url, 'submission_files/', '/')
   }
 
   waitUntilPDFViewerLoad (callback) {
