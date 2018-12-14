@@ -572,6 +572,8 @@ class TextAnnotator extends ContentAnnotator {
                   annotation: annotation,
                   replyAnnotation: replyAnnotation
                 })
+                // Add reply to reply list
+                this.replyAnnotations.push(replyAnnotation)
               }
             })
           } else {
