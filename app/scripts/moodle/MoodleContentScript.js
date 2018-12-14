@@ -59,43 +59,47 @@ class MoodleContentScript {
                 })
               }))
               Promise.all(promises).catch((rejects) => {
+                let reject = _.isArray(rejects) ? rejects[0] : rejects
                 Alerts.errorAlert({
                   title: 'Something went wrong',
-                  text: rejects[0].message
+                  text: reject.message
                 })
               }).then((resolves) => {
-                let rubric = null
-                let students = null
-                if (LanguageUtils.isInstanceOf(resolves[0], Rubric)) {
-                  rubric = resolves[0]
-                  students = resolves[1]
-                } else {
-                  rubric = resolves[1]
-                  students = resolves[0]
-                }
-                // Send task to background
-                chrome.runtime.sendMessage({scope: 'task', cmd: 'createHighlighters', data: {rubric: CircularJSON.stringifyStrict(rubric), students: students, courseId: assignmentData.courseId}}, (result) => {
-                  if (result.err) {
-                    Alerts.errorAlert({
-                      title: 'Something went wrong',
-                      text: 'Error when sending createHighlighters to the background. Please try it again.'
-                    })
+                if (resolves && resolves.length > 1) {
+                  let rubric = null
+                  let students = null
+                  if (LanguageUtils.isInstanceOf(resolves[0], Rubric)) {
+                    rubric = resolves[0]
+                    students = resolves[1]
                   } else {
-                    let minutes = result.minutes
-                    Alerts.infoAlert({
-                      title: 'Configuration started',
-                      text: 'We are configuring everything to start marking students exams using Mark&Go.' +
-                        `This can take around <b>${minutes} minute(s)</b>.` +
-                        'You can close this window, we will notify you when it is finished.'
-                    })
-                    // Show message
-                    callback(null)
+                    rubric = resolves[1]
+                    students = resolves[0]
                   }
-                })
+                  // Send task to background
+                  chrome.runtime.sendMessage({scope: 'task', cmd: 'createHighlighters', data: {rubric: CircularJSON.stringifyStrict(rubric), students: students, courseId: assignmentData.courseId}}, (result) => {
+                    if (result.err) {
+                      Alerts.errorAlert({
+                        title: 'Something went wrong',
+                        text: 'Error when sending createHighlighters to the background. Please try it again.'
+                      })
+                    } else {
+                      let minutes = result.minutes
+                      Alerts.infoAlert({
+                        title: 'Configuration started',
+                        text: 'We are configuring everything to start marking students exams using Mark&Go.' +
+                          `This can take around <b>${minutes} minute(s)</b>.` +
+                          'You can close this window, we will notify you when it is finished.'
+                      })
+                      // Show message
+                      callback(null)
+                    }
+                  })
+                }
               }).catch((rejects) => {
+                let reject = _.isArray(rejects) ? rejects[0] : rejects
                 Alerts.errorAlert({
                   title: 'Something went wrong',
-                  text: rejects.message + '.\n' + chrome.i18n.getMessage('ContactAdministrator')
+                  text: reject.message + '.\n' + chrome.i18n.getMessage('ContactAdministrator')
                 })
               })
             }
