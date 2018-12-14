@@ -47,6 +47,18 @@ class MoodleClientManager {
     }
   }
 
+  getCmidInfo (cmid, callback) {
+    if (_.isFunction(callback)) {
+      let token = this.getTokenFor(MoodleFunctions.getCourseModuleInfo.wsFunc)
+      if (_.isString(token)) {
+        this.moodleClient.updateToken(token)
+        this.moodleClient.getCmidInfo(cmid, callback)
+      } else {
+        callback(new Error('NoPermissions'))
+      }
+    }
+  }
+
   updateStudentGradeWithRubric (data, callback) {
     if (_.isFunction(callback)) {
       let token = this.getTokenFor(MoodleFunctions.updateStudentsGradeWithRubric.wsFunc)

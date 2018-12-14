@@ -111,10 +111,18 @@ class MoodleContentScript {
         if (err) {
           callback(new Error('Unable to get rubric from moodle. Check if you have the permission: ' + MoodleFunctions.getRubric.wsFunc))
         } else {
-          this.constructRubricsModel({
-            moodleRubrics: rubrics,
-            courseId: courseId,
-            callback: callback
+          this.moodleClientManager.getCmidInfo(cmid, (err, cmidInfo) => {
+            if (err) {
+              callback(new Error('Unable to retrieve assignment id from Moodle. Check if you have the permission: ' + MoodleFunctions.getCourseModuleInfo.wsFunc))
+            } else {
+              let assignmentId = cmidInfo.cm.instance
+              this.constructRubricsModel({
+                moodleRubrics: rubrics,
+                courseId: courseId,
+                assignmentId: assignmentId,
+                callback: callback
+              })
+            }
           })
         }
       })
@@ -153,7 +161,7 @@ class MoodleContentScript {
     })
   }
 
-  constructRubricsModel ({moodleRubrics, courseId, callback}) {
+  constructRubricsModel ({moodleRubrics, courseId, assignmentId, callback}) {
     let rubric = new Rubric({
       moodleEndpoint: this.moodleEndpoint,
       assignmentName: this.assignmentName,
@@ -162,11 +170,10 @@ class MoodleContentScript {
     // Ensure a rubric is retrieved
     if (moodleRubrics.areas[0].activemethod === 'rubric') {
       let rubricCriteria = _.get(moodleRubrics, 'areas[0].definitions[0].rubric.rubric_criteria')
-      let rubricAssignmentId = _.get(moodleRubrics, 'areas[0].definitions[0].id')
       let rubricCmid = _.get(moodleRubrics, 'areas[0].cmid')
-      if (!_.isUndefined(rubricCriteria) && !_.isUndefined(rubricAssignmentId) && !_.isUndefined(rubricCmid)) {
+      if (!_.isUndefined(rubricCriteria) && !_.isUndefined(assignmentId) && !_.isUndefined(rubricCmid)) {
         // Set assignment id
-        rubric.assignmentId = moodleRubrics.areas[0].definitions[0].id
+        rubric.assignmentId = assignmentId
         rubric.cmid = moodleRubrics.areas[0].cmid
         // Generate rubric model
         for (let i = 0; i < rubricCriteria.length; i++) {
