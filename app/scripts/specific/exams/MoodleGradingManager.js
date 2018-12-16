@@ -94,8 +94,15 @@ class MoodleGradingManager {
                   if (quoteSelector) {
                     feedbackCommentElement = '<b>' + text + '</b><br/><a href="' + url + '">See in context</a>'
                   }
+                } else {
+                  feedbackCommentElement = '<b>-</b><br/><a href="' + url + '">See in context</a>'
                 }
                 return {criteriaName, levelName, text, url, feedbackCommentElement}
+              })
+              // Reorder criterias as same as are presented in rubric
+              let sortingArr = _.map(window.abwa.rubricManager.rubric.criterias, 'name')
+              marks.slice().sort((a, b) => {
+                return sortingArr.indexOf(a.criteriaName) - sortingArr.indexOf(b.criteriaName)
               })
               // Get for each criteria name and mark its corresponding criterionId and level from window.abwa.rubric
               let criterionAndLevels = this.getCriterionAndLevel(marks)
