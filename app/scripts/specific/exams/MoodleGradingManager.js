@@ -118,7 +118,7 @@ class MoodleGradingManager {
               this.moodleClientManager.updateStudentGradeWithRubric(moodleGradingData, (err) => {
                 if (err) {
                   if (_.isFunction(callback)) {
-                    callback(new Error('Error when updating moodle'))
+                    callback(err)
                   }
                 } else {
                   if (_.isFunction(callback)) {

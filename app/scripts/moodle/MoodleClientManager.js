@@ -64,7 +64,17 @@ class MoodleClientManager {
       let token = this.getTokenFor(MoodleFunctions.updateStudentsGradeWithRubric.wsFunc)
       if (_.isString(token)) {
         this.moodleClient.updateToken(token)
-        this.moodleClient.updateStudentGradeWithRubric(data, callback)
+        this.moodleClient.updateStudentGradeWithRubric(data, (err, data) => {
+          if (err) {
+            callback(err)
+          } else {
+            if (data === null) {
+              callback(null)
+            } else if (data.exception === 'dml_missing_record_exception') {
+              callback(new Error(chrome.i18n.getMessage('ErrorSavingMarksInMoodle') + chrome.i18n.getMessage('ContactAdministrator')))
+            }
+          }
+        })
       } else {
         callback(new Error('NoPermissions'))
       }
