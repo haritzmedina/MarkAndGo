@@ -182,7 +182,9 @@ class TagManager {
     tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => {
       if (tagGroup.tags.length > 0) {
         tagGroup.tags = _.map(tagGroup.tags, (tag, index) => {
-          let color = ColorUtils.setAlphaToColor(colors[tagGroup.config.name], 0.2 + index / tagGroup.tags.length * 0.8)
+          // Calculate the color maximum value (if dark color, the maximum will be 0.6, for light colors 0.9
+          let max = ColorUtils.isDark(colors[tagGroup.config.name]) ? 0.6 : 0.8
+          let color = ColorUtils.setAlphaToColor(colors[tagGroup.config.name], 0.2 + index / tagGroup.tags.length * max)
           tag.options.color = color
           tag.color = color
           return tag

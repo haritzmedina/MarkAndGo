@@ -698,6 +698,12 @@ class TextAnnotator extends ContentAnnotator {
                 // Show error message
                 Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
               } else {
+                // Update current annotations
+                let currentIndex = _.findIndex(this.currentAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
+                this.currentAnnotations.splice(currentIndex, 1, annotation)
+                // Update all annotations
+                let allIndex = _.findIndex(this.allAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
+                this.allAnnotations.splice(allIndex, 1, annotation)
                 // Dispatch updated annotations events
                 LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
                 LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})

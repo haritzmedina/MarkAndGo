@@ -42,6 +42,10 @@ class ColorUtils {
   static getDifferentColors (number) {
     return UniqueColors.unique_colors(number)
   }
+
+  static isDark (str) {
+    return Color(str).isDark()
+  }
 }
 
 module.exports = ColorUtils
