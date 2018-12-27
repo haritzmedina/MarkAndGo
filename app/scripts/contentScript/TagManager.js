@@ -436,6 +436,7 @@ class TagManager {
     let groupNameSpan = tagGroup.querySelector('.groupName')
     groupNameSpan.innerText = name
     groupNameSpan.title = name
+    groupNameSpan.dataset.clickable = 'true'
     // Create event handler for tag group
     groupNameSpan.addEventListener('click', groupHandler)
     // Create buttons and add to the container

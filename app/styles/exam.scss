@@ -1,3 +1,15 @@
+@import "./variables";
+
+/* Fix small size sweetalert2 */
+.swal2-container {
+  zoom: 1.5 !important;
+  z-index: $sidebarZIndex - 1 !important;
+}
+
+.swal2-height-auto {
+  height: 100% !important; // Fix to not unhide pdf document content when showing alerts
+}
+
 .tagContainer[data-exam-hidden="true"] {
   display: none;
 }
@@ -16,5 +28,9 @@
 
 #screenshotButton {
   width: 32px;
+  cursor: pointer;
+}
+
+[data-clickable="true"] {
   cursor: pointer;
 }

@@ -498,6 +498,10 @@ class TextAnnotator extends ContentAnnotator {
             this.goToAnnotation(this.currentAnnotations[nextAnnotationIndex])
           }
         })
+        // Add css clickable if mode manager is mark or view
+        if (window.abwa.modeManager.mode === ModeManager.modes.mark || window.abwa.modeManager.mode === ModeManager.modes.view) {
+          highlightedElement.dataset.clickable = 'true'
+        }
       }
     }
   }
