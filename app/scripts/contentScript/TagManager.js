@@ -27,6 +27,9 @@ class TagManager {
     console.debug('Initializing TagManager')
     this.initTagsStructure(() => {
       this.initEventHandlers(() => {
+        // Show tags container for current mode
+        this.showTagsContainerForMode(window.abwa.modeManager.mode)
+        // Initialize all tags in each of the sidebar modes
         this.initAllTags(() => {
           console.debug('Initialized TagManager')
           if (_.isFunction(callback)) {
@@ -466,11 +469,15 @@ class TagManager {
   }
 
   modeChangeHandler (event) {
-    if (event.detail.mode === ModeManager.modes.evidencing) {
+    this.showTagsContainerForMode(event.detail.mode)
+  }
+
+  showTagsContainerForMode (mode) {
+    if (mode === ModeManager.modes.evidencing) {
       this.showEvidencingTagsContainer()
-    } else if (event.detail.mode === ModeManager.modes.mark) {
+    } else if (mode === ModeManager.modes.mark) {
       this.showMarkingTagsContainer()
-    } else if (event.detail.mode === ModeManager.modes.view) {
+    } else if (mode === ModeManager.modes.view) {
       this.showViewingTagsContainer()
     }
   }
