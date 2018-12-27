@@ -679,11 +679,32 @@ class TextAnnotator extends ContentAnnotator {
     // Close sidebar if opened
     let isSidebarOpened = window.abwa.sidebar.isOpened()
     this.closeSidebar()
+    // Get annotation criteria
+    let criteria = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
+    // Load datalist with previously used texts
     // Open sweetalert
     Alerts.inputTextAlert({
-      input: 'textarea',
+      input: 'text',
       inputPlaceholder: annotation.text || 'Type your feedback here...',
       inputValue: annotation.text || '',
+      inputAttributes: {
+        list: 'commentsList'
+      },
+      html: '<datalist id="commentsList"></datalist>',
+      onBeforeOpen: (swalMod) => {
+        const content = swalMod.querySelector('#swal2-content')
+        const $ = content.querySelector.bind(content)
+        const datalist = $('datalist')
+        this.retrieveDataListOptionsFromPreviouslyUsedComments(criteria, (err, optionElementsList) => {
+          if (err) {
+            // Nothing to do
+          } else {
+            for (let i = 0; i < optionElementsList.length; i++) {
+              datalist.appendChild(optionElementsList[i])
+            }
+          }
+        })
+      },
       callback: (err, result) => {
         if (err) {
           window.alert('Unable to load alert. Is this an annotable document?')
@@ -717,6 +738,36 @@ class TextAnnotator extends ContentAnnotator {
             this.openSidebar()
           }
         }
+      }
+    })
+  }
+
+  retrievePreviouslyUsedComments (criteria, callback) {
+    window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotationsSequential({
+      tag: 'exam:isCriteriaOf:' + criteria,
+      wildcard_uri: (new URL(window.abwa.contentTypeManager.fileMetadata.url)).origin + '/*'
+    }, (err, annotations) => {
+      if (err) {
+        callback(err)
+      } else {
+        // Get texts from annotations and send them in callback
+        callback(null, _.uniq(_.reject(_.map(annotations, (annotation) => annotation.text), _.isEmpty)))
+      }
+    })
+  }
+
+  retrieveDataListOptionsFromPreviouslyUsedComments (criteria, callback) {
+    this.retrievePreviouslyUsedComments(criteria, (err, comments) => {
+      if (err) {
+        callback(null, comments)
+      } else {
+        let optionElements = []
+        for (let i = 0; i < comments.length; i++) {
+          let option = document.createElement('option')
+          option.setAttribute('value', comments[i])
+          optionElements.push(option)
+        }
+        callback(null, optionElements)
       }
     })
   }

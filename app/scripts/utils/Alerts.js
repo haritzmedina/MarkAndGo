@@ -119,7 +119,7 @@ class Alerts {
     }
   }
 
-  static inputTextAlert ({input = 'text', inputPlaceholder = '', inputValue = '', showCancelButton = true, html = '', callback}) {
+  static inputTextAlert ({input = 'text', inputPlaceholder = '', inputValue = '', inputAttributes = {}, onOpen, onBeforeOpen, showCancelButton = true, html = '', callback}) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
       if (_.isFunction(callback)) {
@@ -130,7 +130,10 @@ class Alerts {
         input: input,
         inputPlaceholder: inputPlaceholder,
         inputValue: inputValue,
+        inputAttributes: inputAttributes,
         html: html,
+        onOpen: onOpen,
+        onBeforeOpen: onBeforeOpen,
         showCancelButton: showCancelButton
       }).then((result) => {
         if (result.value) {
