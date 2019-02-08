@@ -14,6 +14,7 @@ require('jquery-contextmenu/dist/jquery.contextMenu')
 const _ = require('lodash')
 require('components-jqueryui')
 const Alerts = require('../../utils/Alerts')
+const Awesomplete = require('awesomplete')
 
 const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
@@ -689,96 +690,102 @@ class TextAnnotator extends ContentAnnotator {
     // Close sidebar if opened
     let isSidebarOpened = window.abwa.sidebar.isOpened()
     this.closeSidebar()
+    // Inputs
+    let comment
     // Get annotation criteria
-    let criteria = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
-    // Load datalist with previously used texts
-    // Open sweetalert
-    Alerts.inputTextAlert({
-      input: 'text',
-      inputPlaceholder: annotation.text || 'Type your feedback here...',
-      inputValue: annotation.text || '',
-      inputAttributes: {
-        list: 'commentsList'
-      },
-      html: '<datalist id="commentsList"></datalist>',
+    let criteriaName = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
+    // Get previous assignments
+    this.retrievePreviousAssignmentsFromStudent().then((previousAssignments) => {
+
+    })
+    Alerts.multipleInputAlert({
+      title: criteriaName,
+      html: '<div class="previousAssignments">' +
+        '<span class="assignment" style="padding-right:5px;"><a href="">Assig1: Requirements</a><img width="15px" style="padding-left: 5px;" src="' + chrome.extension.getURL('images/append.png') + '"></span>' +
+        '<span class="assignment" style="padding-right:5px;"><a href="">Assig2: Analysis</a><img width="15px" style="padding-left: 5px;" src="' + chrome.extension.getURL('images/append.png') + '"></span>' +
+        '<span class="assignment" style="padding-right:5px;"><a href="">Assig3: Design</a><img width="15px" style="padding-left: 5px;" src="' + chrome.extension.getURL('images/append.png') + '"></span>' +
+        '</div>' +
+        '<textarea data-minchars="1" data-multiple id="comment" rows="6">' + annotation.text + '</textarea>',
       onBeforeOpen: (swalMod) => {
-        const content = swalMod.querySelector('#swal2-content')
-        const $ = content.querySelector.bind(content)
-        const datalist = $('datalist')
-        this.retrieveDataListOptionsFromPreviouslyUsedComments(criteria, (err, optionElementsList) => {
-          if (err) {
-            // Nothing to do
-          } else {
-            for (let i = 0; i < optionElementsList.length; i++) {
-              datalist.appendChild(optionElementsList[i])
-            }
-          }
+        // Load datalist with previously used texts
+        this.retrievePreviouslyUsedComments(criteriaName).then((previousComments) => {
+          new Awesomplete(document.querySelector('#comment'), { // eslint-disable-line no-new
+            list: previousComments
+          })
         })
       },
+      // position: Alerts.position.bottom, // TODO Must be check if it is better to show in bottom or not
+      preConfirm: () => {
+        comment = document.querySelector('#comment').value
+      },
       callback: (err, result) => {
-        if (err) {
-          window.alert('Unable to load alert. Is this an annotable document?')
-        } else {
-          // Update annotation
-          annotation.text = result || ''
-          window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
-            annotation.id,
-            annotation,
-            (err, annotation) => {
-              if (err) {
-                // Show error message
-                Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
-              } else {
-                // Update current annotations
-                let currentIndex = _.findIndex(this.currentAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
-                this.currentAnnotations.splice(currentIndex, 1, annotation)
-                // Update all annotations
-                let allIndex = _.findIndex(this.allAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
-                this.allAnnotations.splice(allIndex, 1, annotation)
-                // Dispatch updated annotations events
-                LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
-                LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
-                LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
-                // Redraw annotations
-                DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
-                this.highlightAnnotation(annotation)
-              }
-            })
-          if (isSidebarOpened) {
-            this.openSidebar()
+        if (!_.isUndefined(comment)) { // It was pressed OK button instead of cancel, so update the annotation
+          if (err) {
+            window.alert('Unable to load alert. Is this an annotable document?')
+          } else {
+            // Update annotation
+            annotation.text = comment || ''
+            window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
+              annotation.id,
+              annotation,
+              (err, annotation) => {
+                if (err) {
+                  // Show error message
+                  Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
+                } else {
+                  // Update current annotations
+                  let currentIndex = _.findIndex(this.currentAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
+                  this.currentAnnotations.splice(currentIndex, 1, annotation)
+                  // Update all annotations
+                  let allIndex = _.findIndex(this.allAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
+                  this.allAnnotations.splice(allIndex, 1, annotation)
+                  // Dispatch updated annotations events
+                  LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
+                  LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
+                  LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
+                  // Redraw annotations
+                  DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
+                  this.highlightAnnotation(annotation)
+                }
+              })
+            if (isSidebarOpened) {
+              this.openSidebar()
+            }
           }
         }
       }
     })
   }
 
-  retrievePreviouslyUsedComments (criteria, callback) {
-    window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotationsSequential({
-      tag: 'exam:isCriteriaOf:' + criteria,
-      wildcard_uri: (new URL(window.abwa.contentTypeManager.fileMetadata.url)).origin + '/*'
-    }, (err, annotations) => {
-      if (err) {
-        callback(err)
-      } else {
-        // Get texts from annotations and send them in callback
-        callback(null, _.uniq(_.reject(_.map(annotations, (annotation) => annotation.text), _.isEmpty)))
-      }
+  async retrievePreviousAssignmentsFromStudent (studentId, course) {
+    return new Promise((resolve, reject) => {
+      window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
+        tag: 'exam:metadata',
+        group: window.abwa.groupSelector.currentGroup.id
+      }, (err, annotations) => {
+        if (err) {
+          reject(err)
+        } else {
+          // TODO Rubric.fromAnnotation(annotations[i]
+        }
+      })
     })
   }
 
-  retrieveDataListOptionsFromPreviouslyUsedComments (criteria, callback) {
-    this.retrievePreviouslyUsedComments(criteria, (err, comments) => {
-      if (err) {
-        callback(null, comments)
-      } else {
-        let optionElements = []
-        for (let i = 0; i < comments.length; i++) {
-          let option = document.createElement('option')
-          option.setAttribute('value', comments[i])
-          optionElements.push(option)
+  async retrievePreviouslyUsedComments (criteria) {
+    return new Promise((resolve, reject) => {
+      window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotationsSequential({
+        tag: 'exam:isCriteriaOf:' + criteria,
+        wildcard_uri: (new URL(window.abwa.contentTypeManager.fileMetadata.url)).origin + '/*'
+      }, (err, annotations) => {
+        if (err) {
+          reject(err)
+        } else {
+          // Get texts from annotations and send them in callback
+          resolve(_.uniq(_.reject(_.map(annotations, (annotation) => annotation.text), _.isEmpty)))
         }
-        callback(null, optionElements)
-      }
+      })
+      return true
     })
   }
 

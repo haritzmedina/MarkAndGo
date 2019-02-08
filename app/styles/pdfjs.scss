@@ -1,4 +1,4 @@
-mark {
+mark.highlightedAnnotation {
   color: transparent;
 }
 
@@ -17,4 +17,8 @@ mark {
 /* Fix for background black on pdf using swal2 */
 .swal2-shown {
   height: 100% !important;
+}
+
+#outerContainer {
+  position: absolute;
 }

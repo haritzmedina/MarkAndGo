@@ -1,3 +1,5 @@
+require('babel-polyfill') // To allow async await functions
+
 const ContentScriptManager = require('./contentScript/ContentScriptManager')
 const AnnotationBasedInitializer = require('./contentScript/AnnotationBasedInitializer')
 

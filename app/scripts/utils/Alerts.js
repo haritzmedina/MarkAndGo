@@ -43,7 +43,7 @@ class Alerts {
     }
   }
 
-  static errorAlert ({text = chrome.i18n.getMessage('unexpectedError'), title = 'Oops...', callback}) {
+  static errorAlert ({text = chrome.i18n.getMessage('unexpectedError'), title = 'Oops...', callback, onClose}) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
       if (_.isFunction(callback)) {
@@ -54,6 +54,10 @@ class Alerts {
         type: Alerts.alertType.error,
         title: title,
         html: text
+      }).then(() => {
+        if (_.isFunction(callback)) {
+          callback(null)
+        }
       })
     }
   }
@@ -119,7 +123,7 @@ class Alerts {
     }
   }
 
-  static inputTextAlert ({input = 'text', inputPlaceholder = '', inputValue = '', inputAttributes = {}, onOpen, onBeforeOpen, showCancelButton = true, html = '', callback}) {
+  static inputTextAlert ({input = 'text', inputPlaceholder = '', inputValue = '', inputAttributes = {}, onOpen, onBeforeOpen, position = Alerts.position.center, showCancelButton = true, html = '', callback}) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
       if (_.isFunction(callback)) {
@@ -140,6 +144,30 @@ class Alerts {
           if (_.isFunction(callback)) {
             callback(null, result.value)
           }
+        }
+      })
+    }
+  }
+
+  static multipleInputAlert ({title = 'Input', html = '', preConfirm, onOpen, onBeforeOpen, position = Alerts.position.center, showCancelButton = true, callback}) {
+    Alerts.tryToLoadSwal()
+    if (_.isNull(swal)) {
+      if (_.isFunction(callback)) {
+        callback(new Error('Unable to load swal'))
+      }
+    } else {
+      swal({
+        title: title,
+        html: html,
+        focusConfirm: false,
+        preConfirm: preConfirm,
+        position: position,
+        onOpen: onOpen,
+        onBeforeOpen: onBeforeOpen,
+        showCancelButton: showCancelButton
+      }).then(() => {
+        if (_.isFunction(callback)) {
+          callback(null)
         }
       })
     }
@@ -173,6 +201,10 @@ class Alerts {
   static closeAlert () {
     swal.close()
   }
+
+  static isVisible () {
+    return swal.isVisible()
+  }
 }
 
 Alerts.alertType = {
@@ -181,6 +213,18 @@ Alerts.alertType = {
   success: 'success',
   info: 'info',
   question: 'question'
+}
+
+Alerts.position = {
+  top: 'top',
+  topStart: 'top-start',
+  topEnd: 'top-end',
+  center: 'center',
+  centerStart: 'center-start',
+  centerEnd: 'center-end',
+  bottom: 'bottom',
+  bottomStart: 'bottom-start',
+  bottomEnd: 'bottom-end'
 }
 
 module.exports = Alerts

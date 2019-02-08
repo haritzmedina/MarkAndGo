@@ -125,6 +125,10 @@ class MoodleClientManager {
   getSubmissionComments () {
 
   }
+
+  getStudentPreviousSubmissions ({studentId, course = null}) {
+
+  }
 }
 
 module.exports = MoodleClientManager

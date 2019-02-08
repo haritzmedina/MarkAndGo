@@ -3,7 +3,7 @@
 /* Fix small size sweetalert2 */
 .swal2-container {
   zoom: 1.5 !important;
-  z-index: $sidebarZIndex - 1 !important;
+  z-index: $sidebarZIndex - 10 !important;
 }
 
 .swal2-height-auto {
@@ -33,4 +33,12 @@
 
 [data-clickable="true"] {
   cursor: pointer;
+}
+
+.swal2-actions {
+  z-index: 0 !important;
+}
+
+#comment {
+  width: 300px;
 }
