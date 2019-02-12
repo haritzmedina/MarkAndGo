@@ -57,3 +57,7 @@
 .annotatorToggleSlider.round:before {
   border-radius: 50%;
 }
+
+#modeManagerContainer {
+  height: calc(#{$switchSize} * 34 / 60);
+}

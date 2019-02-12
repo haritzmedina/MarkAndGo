@@ -42,3 +42,41 @@
 #comment {
   width: 300px;
 }
+
+// Comments container styles
+
+$previousAssignmentWidth: 149px;
+$previousAssignmentContainerWidth: 300px;
+
+.previousAssignmentsContainer {
+  max-width: $previousAssignmentContainerWidth;
+  grid-template-columns: $previousAssignmentWidth $previousAssignmentWidth;
+  grid-gap: 1px;
+  display: grid;
+  margin-bottom: 5px;
+}
+
+.previousAssignmentContainer {
+  max-width: $previousAssignmentWidth;
+  background-color: whitesmoke;
+}
+
+.previousAssignmentLink {
+  max-width: $previousAssignmentWidth - 5px - 15px;
+}
+
+.previousAssignmentAppendButton {
+  width: 15px;
+  cursor: pointer;
+  float: right;
+  border-radius: 2px;
+}
+
+.previousAssignmentAppendButton:hover {
+  background-color: rgba(125, 125, 125, 0.6);
+}
+
+.previousAssignmentContainer {
+  padding-right: 5px;
+}
+

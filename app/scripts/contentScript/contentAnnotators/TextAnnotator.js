@@ -15,6 +15,7 @@ const _ = require('lodash')
 require('components-jqueryui')
 const Alerts = require('../../utils/Alerts')
 const Awesomplete = require('awesomplete')
+const Rubric = require('../../model/Rubric')
 
 const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
@@ -467,6 +468,8 @@ class TextAnnotator extends ContentAnnotator {
         this.createContextMenuForAnnotation(annotation)
         // Create click event to move to next annotation
         this.createNextAnnotationHandler(annotation)
+        // Create double click event handler
+        this.createDoubleClickEventHandler(annotation)
       } catch (e) {
         // TODO Handle error (maybe send in callback the error ¿?)
         if (_.isFunction(callback)) {
@@ -477,6 +480,16 @@ class TextAnnotator extends ContentAnnotator {
           callback()
         }
       }
+    }
+  }
+
+  createDoubleClickEventHandler (annotation) {
+    let highlights = document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')
+    for (let i = 0; i < highlights.length; i++) {
+      let highlight = highlights[i]
+      highlight.addEventListener('dblclick', () => {
+        this.commentAnnotationHandler(annotation)
+      })
     }
   }
 
@@ -695,69 +708,99 @@ class TextAnnotator extends ContentAnnotator {
     // Get annotation criteria
     let criteriaName = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
     // Get previous assignments
-    this.retrievePreviousAssignmentsFromStudent().then((previousAssignments) => {
-
-    })
-    Alerts.multipleInputAlert({
-      title: criteriaName,
-      html: '<div class="previousAssignments">' +
-        '<span class="assignment" style="padding-right:5px;"><a href="">Assig1: Requirements</a><img width="15px" style="padding-left: 5px;" src="' + chrome.extension.getURL('images/append.png') + '"></span>' +
-        '<span class="assignment" style="padding-right:5px;"><a href="">Assig2: Analysis</a><img width="15px" style="padding-left: 5px;" src="' + chrome.extension.getURL('images/append.png') + '"></span>' +
-        '<span class="assignment" style="padding-right:5px;"><a href="">Assig3: Design</a><img width="15px" style="padding-left: 5px;" src="' + chrome.extension.getURL('images/append.png') + '"></span>' +
-        '</div>' +
-        '<textarea data-minchars="1" data-multiple id="comment" rows="6">' + annotation.text + '</textarea>',
-      onBeforeOpen: (swalMod) => {
-        // Load datalist with previously used texts
-        this.retrievePreviouslyUsedComments(criteriaName).then((previousComments) => {
-          new Awesomplete(document.querySelector('#comment'), { // eslint-disable-line no-new
-            list: previousComments
+    this.retrievePreviousAssignmentsFromStudent(window.abwa.contentTypeManager.fileMetadata.studentId).then((previousAssignments) => {
+      let previousAssignmentsUI = this.createPreviousAssignmentsUI(previousAssignments)
+      Alerts.multipleInputAlert({
+        title: criteriaName,
+        html: previousAssignmentsUI.outerHTML + '<textarea data-minchars="1" data-multiple id="comment" rows="6">' + annotation.text + '</textarea>',
+        onBeforeOpen: (swalMod) => {
+          // Add event listeners for append buttons
+          let previousAssignmentAppendElements = document.querySelectorAll('.previousAssignmentAppendButton')
+          previousAssignmentAppendElements.forEach((previousAssignmentAppendElement) => {
+            previousAssignmentAppendElement.addEventListener('click', () => {
+              // Append url to comment
+              let commentTextarea = document.querySelector('#comment')
+              commentTextarea.value = commentTextarea.value + previousAssignmentAppendElement.dataset.studentUrl
+            })
           })
-        })
-      },
-      // position: Alerts.position.bottom, // TODO Must be check if it is better to show in bottom or not
-      preConfirm: () => {
-        comment = document.querySelector('#comment').value
-      },
-      callback: (err, result) => {
-        if (!_.isUndefined(comment)) { // It was pressed OK button instead of cancel, so update the annotation
-          if (err) {
-            window.alert('Unable to load alert. Is this an annotable document?')
-          } else {
-            // Update annotation
-            annotation.text = comment || ''
-            window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
-              annotation.id,
-              annotation,
-              (err, annotation) => {
-                if (err) {
-                  // Show error message
-                  Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
-                } else {
-                  // Update current annotations
-                  let currentIndex = _.findIndex(this.currentAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
-                  this.currentAnnotations.splice(currentIndex, 1, annotation)
-                  // Update all annotations
-                  let allIndex = _.findIndex(this.allAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
-                  this.allAnnotations.splice(allIndex, 1, annotation)
-                  // Dispatch updated annotations events
-                  LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
-                  LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
-                  LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
-                  // Redraw annotations
-                  DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
-                  this.highlightAnnotation(annotation)
-                }
-              })
-            if (isSidebarOpened) {
-              this.openSidebar()
+          // Load datalist with previously used texts
+          this.retrievePreviouslyUsedComments(criteriaName).then((previousComments) => {
+            new Awesomplete(document.querySelector('#comment'), { // eslint-disable-line no-new
+              list: previousComments
+            })
+          })
+        },
+        // position: Alerts.position.bottom, // TODO Must be check if it is better to show in bottom or not
+        preConfirm: () => {
+          comment = document.querySelector('#comment').value
+        },
+        callback: (err, result) => {
+          if (!_.isUndefined(comment)) { // It was pressed OK button instead of cancel, so update the annotation
+            if (err) {
+              window.alert('Unable to load alert. Is this an annotable document?')
+            } else {
+              // Update annotation
+              annotation.text = comment || ''
+              window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(
+                annotation.id,
+                annotation,
+                (err, annotation) => {
+                  if (err) {
+                    // Show error message
+                    Alerts.errorAlert({text: chrome.i18n.getMessage('errorUpdatingAnnotationComment')})
+                  } else {
+                    // Update current annotations
+                    let currentIndex = _.findIndex(this.currentAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
+                    this.currentAnnotations.splice(currentIndex, 1, annotation)
+                    // Update all annotations
+                    let allIndex = _.findIndex(this.allAnnotations, (currentAnnotation) => { return annotation.id === currentAnnotation.id })
+                    this.allAnnotations.splice(allIndex, 1, annotation)
+                    // Dispatch updated annotations events
+                    LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
+                    LanguageUtils.dispatchCustomEvent(Events.updatedAllAnnotations, {annotations: this.allAnnotations})
+                    LanguageUtils.dispatchCustomEvent(Events.comment, {annotation: annotation})
+                    // Redraw annotations
+                    DOMTextUtils.unHighlightElements([...document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')])
+                    this.highlightAnnotation(annotation)
+                  }
+                })
+              if (isSidebarOpened) {
+                this.openSidebar()
+              }
             }
           }
         }
-      }
+      })
     })
   }
 
-  async retrievePreviousAssignmentsFromStudent (studentId, course) {
+  createPreviousAssignmentsUI (previousAssignments) {
+    let previousAssignmentsContainer = document.createElement('div')
+    previousAssignmentsContainer.className = 'previousAssignmentsContainer'
+    for (let i = 0; i < previousAssignments.length; i++) {
+      let previousAssignment = previousAssignments[i]
+      // Create previous assignment element container
+      let previousAssignmentElement = document.createElement('span')
+      previousAssignmentElement.className = 'previousAssignmentContainer'
+      // Create previous assignment link
+      let previousAssignmentLinkElement = document.createElement('a')
+      previousAssignmentLinkElement.href = previousAssignment.teacherUrl
+      previousAssignmentLinkElement.target = '_blank'
+      previousAssignmentLinkElement.innerText = previousAssignment.name
+      previousAssignmentLinkElement.className = 'previousAssignmentLink'
+      previousAssignmentElement.appendChild(previousAssignmentLinkElement)
+      // Create previous assignment append img
+      let previousAssignmentAppendElement = document.createElement('img')
+      previousAssignmentAppendElement.src = chrome.extension.getURL('images/append.png')
+      previousAssignmentAppendElement.className = 'previousAssignmentAppendButton'
+      previousAssignmentAppendElement.dataset.studentUrl = previousAssignment.studentUrl
+      previousAssignmentElement.appendChild(previousAssignmentAppendElement)
+      previousAssignmentsContainer.appendChild(previousAssignmentElement)
+    }
+    return previousAssignmentsContainer
+  }
+
+  async retrievePreviousAssignmentsFromStudent (studentId) {
     return new Promise((resolve, reject) => {
       window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
         tag: 'exam:metadata',
@@ -766,7 +809,23 @@ class TextAnnotator extends ContentAnnotator {
         if (err) {
           reject(err)
         } else {
-          // TODO Rubric.fromAnnotation(annotations[i]
+          let previousAssignments = []
+          for (let i = 0; i < annotations.length; i++) {
+            let rubric = Rubric.fromAnnotation(annotations[i])
+            // If current assignment is previous assignment, don't add
+            if (window.abwa.contentTypeManager.fileMetadata.cmid !== rubric.cmid) {
+              let previousAssignment = {name: rubric.name}
+              let teacherUrl = rubric.getUrlToStudentAssignmentForTeacher(studentId)
+              let studentUrl = rubric.getUrlToStudentAssignmentForStudent(studentId)
+              // If it is unable to retrieve the URL, don't add
+              if (!_.isNull(teacherUrl) && !_.isNull(studentUrl)) {
+                previousAssignment.teacherUrl = teacherUrl
+                previousAssignment.studentUrl = studentUrl
+                previousAssignments.push(previousAssignment)
+              }
+            }
+          }
+          resolve(previousAssignments)
         }
       })
     })
@@ -782,7 +841,12 @@ class TextAnnotator extends ContentAnnotator {
           reject(err)
         } else {
           // Get texts from annotations and send them in callback
-          resolve(_.uniq(_.reject(_.map(annotations, (annotation) => annotation.text), _.isEmpty)))
+          resolve(_.uniq(_.reject(_.map(annotations, (annotation) => {
+            // Remove other students moodle urls
+            let text = annotation.text
+            let regex = /\b(?:https?:\/\/)?[^/:]+\/.*?mod\/assign\/view.php\?id=[0-9]+/g
+            return text.replace(regex, '')
+          }), _.isEmpty)))
         }
       })
       return true

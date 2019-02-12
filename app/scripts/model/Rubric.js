@@ -45,6 +45,22 @@ class Rubric extends AnnotationGuide {
     }
   }
 
+  getUrlToStudentAssignmentForTeacher (studentId) {
+    if (studentId && this.moodleEndpoint && this.cmid) {
+      return this.moodleEndpoint + 'mod/assign/view.php?id=' + this.cmid + '&rownum=0&action=grader&userid=' + studentId
+    } else {
+      return null
+    }
+  }
+
+  getUrlToStudentAssignmentForStudent (studentId) {
+    if (studentId && this.moodleEndpoint && this.cmid) {
+      return this.moodleEndpoint + 'mod/assign/view.php?id=' + this.cmid
+    } else {
+      return null
+    }
+  }
+
   static fromAnnotations (annotations) {
     let rubricAnnotation = _.remove(annotations, (annotation) => {
       return _.some(annotation.tags, (tag) => { return tag === 'exam:metadata' })
@@ -97,7 +113,7 @@ class Rubric extends AnnotationGuide {
     if (_.isString(cmidTag)) {
       config.cmid = cmidTag.replace('exam:cmid:', '')
     }
-    config.assignmentName = window.abwa.groupSelector.currentGroup.name
+    config.assignmentName = config.assignmentName || window.abwa.groupSelector.currentGroup.name
     config.hypothesisGroup = window.abwa.groupSelector.currentGroup
     return new Rubric(config)
   }

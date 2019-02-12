@@ -10,6 +10,7 @@ const UserFilter = require('./UserFilter')
 const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
 const RolesManager = require('./RolesManager')
 const RubricManager = require('./RubricManager')
+const MarkAndGoToolset = require('../specific/exams/MarkAndGoToolset')
 
 class ContentScriptManager {
   constructor () {
@@ -63,6 +64,8 @@ class ContentScriptManager {
     let config = Config.exams // Configuration for this tool is exams
     this.reloadRolesManager(config, () => {
       this.reloadRubricManager(config, () => {
+        // Initialize sidebar toolset
+        this.initToolset()
         // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
         this.reloadTagsManager(config, () => {
           this.reloadContentAnnotator(config, () => {
@@ -77,6 +80,11 @@ class ContentScriptManager {
         })
       })
     })
+  }
+
+  initToolset () {
+    window.abwa.toolset = new MarkAndGoToolset()
+    window.abwa.toolset.init()
   }
 
   reloadRubricManager (config, callback) {

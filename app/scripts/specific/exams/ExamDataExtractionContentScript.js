@@ -1,9 +1,7 @@
 const _ = require('lodash')
 const jsYaml = require('js-yaml')
 // const StudentLogging = require('./StudentLogging')
-const Screenshots = require('./Screenshots')
 const Config = require('../../Config')
-const BackToWorkspace = require('./BackToWorkspace')
 const MoodleGradingManager = require('./MoodleGradingManager')
 const MoodleCommentManager = require('./MoodleCommentManager')
 
@@ -21,17 +19,14 @@ class ExamDataExtractionContentScript {
 
           window.abwa.specific.moodleGradingManager = new MoodleGradingManager()
           window.abwa.specific.moodleGradingManager.init()
-
-          window.abwa.specific.backToWorkspace = new BackToWorkspace()
-          window.abwa.specific.backToWorkspace.init()
-
-          // Enable screenshot functionality
-          window.abwa.specific.screenshots = new Screenshots()
-          window.abwa.specific.screenshots.init()
+          // Toolset show
+          window.abwa.toolset.show()
         } else { // Change to checker mode
           window.abwa.specific = window.abwa.specific || {}
           window.abwa.tagManager.showViewingTagsContainer()
           window.abwa.sidebar.openSidebar()
+          // Toolset hide
+          window.abwa.toolset.hide()
           // Log student reviewed the exam
           // window.abwa.specific.studentLogging = new StudentLogging()
           // window.abwa.specific.studentLogging.init()
@@ -75,15 +70,6 @@ class ExamDataExtractionContentScript {
       if (window.abwa.specific) {
         if (window.abwa.specific.moodleGradingManager) {
           window.abwa.specific.moodleGradingManager.destroy()
-        }
-        if (window.abwa.specific.backToWorkspace) {
-          window.abwa.specific.backToWorkspace.destroy()
-        }
-        if (window.abwa.specific.studentLogging) {
-          window.abwa.specific.studentLogging.destroy()
-        }
-        if (window.abwa.specific.screenshots) {
-          window.abwa.specific.screenshots.destroy()
         }
       }
     } catch (e) {
