@@ -892,6 +892,15 @@ class TextAnnotator extends ContentAnnotator {
       let queryTextSelector = _.find(annotation.target[0].selector, (selector) => { return selector.type === 'TextQuoteSelector' })
       if (queryTextSelector && queryTextSelector.exact) {
         window.PDFViewerApplication.findController.executeCommand('find', {query: queryTextSelector.exact, phraseSearch: true})
+        // Timeout to remove highlight used by PDF.js
+        setTimeout(() => {
+          let pdfjsHighlights = document.querySelectorAll('.highlight')
+          for (let i = 0; pdfjsHighlights.length; i++) {
+            pdfjsHighlights[i].classList.remove('highlight')
+          }
+        }, 1000)
+        // Redraw annotations
+        this.redrawAnnotations()
       }
     } else { // Else, try to find the annotation by data-annotation-id element attribute
       let firstElementToScroll = document.querySelector('[data-annotation-id="' + annotation.id + '"]')
