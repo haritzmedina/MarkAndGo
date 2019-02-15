@@ -2,8 +2,11 @@
 
 /* Fix small size sweetalert2 */
 .swal2-container {
-  zoom: 1.5 !important;
   z-index: $sidebarZIndex - 10 !important;
+}
+
+html[mozdisallowselectionprint] .swal2-container {
+  zoom: 1.5 !important;
 }
 
 .swal2-height-auto {
@@ -40,29 +43,34 @@
 }
 
 #comment {
-  width: 300px;
+  width: 100%;
 }
+
+.awesomplete {
+  width: 100%;
+}
+
 
 // Comments container styles
 
-$previousAssignmentWidth: 149px;
-$previousAssignmentContainerWidth: 300px;
+$previousAssignmentWidth: 50%;
+$previousAssignmentContainerWidth: 100%;
 
 .previousAssignmentsContainer {
   max-width: $previousAssignmentContainerWidth;
-  grid-template-columns: $previousAssignmentWidth $previousAssignmentWidth;
+  grid-template-columns: repeat(2, calc( #{$previousAssignmentWidth} - 0.5px));
   grid-gap: 1px;
   display: grid;
   margin-bottom: 5px;
 }
 
 .previousAssignmentContainer {
-  max-width: $previousAssignmentWidth;
-  background-color: whitesmoke;
+  max-width: 100%;
+  background-color: rgba(125,125,125,0.2);
 }
 
 .previousAssignmentLink {
-  max-width: $previousAssignmentWidth - 5px - 15px;
+  max-width: calc( 100% - 5px - 15px );
 }
 
 .previousAssignmentAppendButton {
@@ -78,5 +86,9 @@ $previousAssignmentContainerWidth: 300px;
 
 .previousAssignmentContainer {
   padding-right: 5px;
+  border-radius: 5px;
 }
 
+.previousAssignmentContainer:last-child:nth-child(odd) {
+  grid-column: span 2;
+}

@@ -14,19 +14,6 @@ class MoodleGradingManager {
   init (callback) {
     this.moodleClientManager = new MoodleClientManager(window.abwa.rubricManager.rubric.moodleEndpoint)
     this.moodleClientManager.init(() => {
-      // Create event for marking
-      this.events.marking = {
-        element: document,
-        event: Events.mark,
-        handler: this.markAnnotationCreateEventHandler((err) => {
-          if (err) {
-            Alerts.errorAlert({text: err.message})
-          } else {
-            Alerts.temporalAlert({text: 'The mark is updated in moodle', title: 'Correctly marked', type: Alerts.alertType.success})
-          }
-        })
-      }
-      this.events.marking.element.addEventListener(this.events.marking.event, this.events.marking.handler, false)
       // Create event for comment update
       this.events.comment = {
         element: document,
@@ -40,97 +27,78 @@ class MoodleGradingManager {
     })
   }
 
-  markAnnotationCreateEventHandler (callback) {
-    return (event) => {
-      let annotation = null
-      if (_.has(event.detail, 'annotations[0]')) {
-        annotation = event.detail.annotations[0]
-      } else {
-        annotation = event.detail.annotation
-      }
-      this.updateAnnotationsFromOtherFiles(annotation, (err, annotations) => {
-        if (err) {
-
-        } else {
-          // Get student id
-          let studentId = window.abwa.contentTypeManager.fileMetadata.studentId
-          // Get assignmentId from rubric
-          let cmid = window.abwa.rubricManager.rubric.cmid
-          // Get all annotations for current cmid
-          window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-            any: 'exam:cmid:' + cmid,
-            group: window.abwa.groupSelector.currentGroup.id,
-            user: window.abwa.groupSelector.user.userid
-          }, (err, annotations) => {
-            if (err) {
-
-            } else {
-              // Filter from search only the annotations which are used to classify and are from this cmid
-              let cmid = window.abwa.rubricManager.rubric.cmid
-              annotations = _.filter(annotations, (anno) => {
-                return anno.uri !== window.abwa.groupSelector.currentGroup.links.html &&
-                  _.find(anno.tags, (tag) => {
-                    return tag === 'exam:cmid:' + cmid
-                  })
-              })
-              let marks = _.map(annotations, (annotation) => {
-                let criteriaName = _.find(annotation.tags, (tag) => {
-                  return tag.includes('exam:isCriteriaOf:')
-                }).replace('exam:isCriteriaOf:', '')
-                let levelName = _.find(annotation.tags, (tag) => {
-                  return tag.includes('exam:mark:')
-                })
-                if (levelName) {
-                  levelName = levelName.replace('exam:mark:', '')
-                } else {
-                  levelName = null
-                }
-                let url = MoodleUtils.createURLForAnnotation({annotation, studentId, courseId: window.abwa.rubricManager.rubric.courseId, cmid: window.abwa.rubricManager.rubric.cmid})
-                // Construct feedback
-                let text = annotation.text
-                let feedbackCommentElement = ''
-                if (text) {
-                  let quoteSelector = _.find(annotation.target[0].selector, (selector) => { return selector.type === 'TextQuoteSelector' })
-                  if (quoteSelector) {
-                    feedbackCommentElement = '<b>' + text + '</b><br/><a href="' + url + '">See in context</a>'
-                  }
-                } else {
-                  feedbackCommentElement = '<b>-</b><br/><a href="' + url + '">See in context</a>'
-                }
-                return {criteriaName, levelName, text, url, feedbackCommentElement}
-              })
-              // Reorder criterias as same as are presented in rubric
-              let sortingArr = _.map(window.abwa.rubricManager.rubric.criterias, 'name')
-              marks.slice().sort((a, b) => {
-                return sortingArr.indexOf(a.criteriaName) - sortingArr.indexOf(b.criteriaName)
-              })
-              // Get for each criteria name and mark its corresponding criterionId and level from window.abwa.rubric
-              let criterionAndLevels = this.getCriterionAndLevel(marks)
-              let feedbackComment = this.getFeedbackComment(marks)
-              // Compose moodle data
-              let moodleGradingData = this.composeMoodleGradingData({
-                criterionAndLevels,
-                userId: studentId,
-                assignmentId: window.abwa.rubricManager.rubric.assignmentId,
-                feedbackComment: feedbackComment
-              })
-              // Update student grading in moodle
-              this.moodleClientManager.updateStudentGradeWithRubric(moodleGradingData, (err) => {
-                if (err) {
-                  if (_.isFunction(callback)) {
-                    callback(err)
-                  }
-                } else {
-                  if (_.isFunction(callback)) {
-                    callback(null)
-                  }
-                }
-              })
-            }
-          })
-        }
+  updateMoodleFromMarks (toUpdateMarks, callback) {
+    // Get annotations
+    let annotations = _.flatten(_.map(toUpdateMarks, mark => mark.annotations))
+    // Get student id
+    let studentId = window.abwa.contentTypeManager.fileMetadata.studentId
+    // Filter from search only the annotations which are used to classify and are from this cmid
+    let cmid = window.abwa.rubricManager.rubric.cmid
+    annotations = _.filter(annotations, (anno) => {
+      return anno.uri !== window.abwa.groupSelector.currentGroup.links.html &&
+        _.find(anno.tags, (tag) => {
+          return tag === 'exam:cmid:' + cmid
+        })
+    })
+    let marks = _.map(annotations, (annotation) => {
+      let criteriaName = _.find(annotation.tags, (tag) => {
+        return tag.includes('exam:isCriteriaOf:')
+      }).replace('exam:isCriteriaOf:', '')
+      let levelName = _.find(annotation.tags, (tag) => {
+        return tag.includes('exam:mark:')
       })
-    }
+      if (levelName) {
+        levelName = levelName.replace('exam:mark:', '')
+      } else {
+        levelName = null
+      }
+      let url = MoodleUtils.createURLForAnnotation({annotation, studentId, courseId: window.abwa.rubricManager.rubric.courseId, cmid: window.abwa.rubricManager.rubric.cmid})
+      // Construct feedback
+      let text = annotation.text
+      let feedbackCommentElement = ''
+      if (text) {
+        let quoteSelector = _.find(annotation.target[0].selector, (selector) => { return selector.type === 'TextQuoteSelector' })
+        if (quoteSelector) {
+          feedbackCommentElement = '<b>' + text + '</b><br/><a href="' + url + '">See in context</a>'
+        }
+      } else {
+        feedbackCommentElement = '<b>-</b><br/><a href="' + url + '">See in context</a>'
+      }
+      return {criteriaName, levelName, text, url, feedbackCommentElement}
+    })
+    // Reorder criterias as same as are presented in rubric
+    let sortingArr = _.map(window.abwa.rubricManager.rubric.criterias, 'name')
+    marks.slice().sort((a, b) => {
+      return sortingArr.indexOf(a.criteriaName) - sortingArr.indexOf(b.criteriaName)
+    })
+    // Get for each criteria name and mark its corresponding criterionId and level from window.abwa.rubric
+    let criterionAndLevels = this.getCriterionAndLevel(marks)
+    let feedbackComment = this.getFeedbackComment(marks)
+    // Compose moodle data
+    let moodleGradingData = this.composeMoodleGradingData({
+      criterionAndLevels,
+      userId: studentId,
+      assignmentId: window.abwa.rubricManager.rubric.assignmentId,
+      feedbackComment: feedbackComment
+    })
+    // Update student grading in moodle
+    this.moodleClientManager.updateStudentGradeWithRubric(moodleGradingData, (err) => {
+      if (err) {
+        if (_.isFunction(callback)) {
+          callback(err)
+        }
+      } else {
+        Alerts.temporalAlert({
+          text: 'The mark is updated in moodle',
+          title: 'Correctly marked',
+          type: Alerts.alertType.success,
+          toast: true
+        })
+        if (_.isFunction(callback)) {
+          callback(null)
+        }
+      }
+    })
   }
 
   getCriterionAndLevel (marks) {
@@ -163,7 +131,7 @@ class MoodleGradingManager {
   }
 
   getFeedbackComment (marks) {
-    let feedbackComment = '<h1>How to see feedback in your assignment?</h1><ul>' +
+    let feedbackComment = '<h2>How to see feedback in your assignment?</h2><ul>' +
       '<li><a target="_blank" href="https://chrome.google.com/webstore/detail/markgo/kjedcndgienemldgjpjjnhjdhfoaocfa">Install Mark&Go</a></li>' +
       '<li><a target="_blank" href="' + window.abwa.groupSelector.currentGroup.links.html + '">Join feedback group</a></li>' +
       '</ul><hr/>' // TODO i18n
@@ -172,7 +140,7 @@ class MoodleGradingManager {
       // Criteria + level
       let criteria = markGroup[0].criteriaName
       let levelId = markGroup[0].levelName
-      feedbackComment += '<h2>Criteria: ' + criteria + ' - Mark: ' + levelId + '</h2><br/>'
+      feedbackComment += '<h3>Criteria: ' + criteria + ' - Mark: ' + levelId + '</h3><br/>'
       // Comments
       _.forEach(markGroup, (mark) => {
         feedbackComment += mark.feedbackCommentElement + '<br/>'

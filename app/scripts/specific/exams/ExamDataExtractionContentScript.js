@@ -4,6 +4,7 @@ const jsYaml = require('js-yaml')
 const Config = require('../../Config')
 const MoodleGradingManager = require('./MoodleGradingManager')
 const MoodleCommentManager = require('./MoodleCommentManager')
+const AssessmentManager = require('./AssessmentManager')
 
 class ExamDataExtractionContentScript {
   init (callback) {
@@ -19,9 +20,15 @@ class ExamDataExtractionContentScript {
 
           window.abwa.specific.moodleGradingManager = new MoodleGradingManager()
           window.abwa.specific.moodleGradingManager.init()
+
+          window.abwa.specific.assessmentManager = new AssessmentManager({
+            cmid: window.abwa.rubricManager.rubric.cmid
+          })
+          window.abwa.specific.assessmentManager.init()
+
           // Toolset show
           window.abwa.toolset.show()
-        } else { // Change to checker mode
+        } else { // Change to viewing mode
           window.abwa.specific = window.abwa.specific || {}
           window.abwa.tagManager.showViewingTagsContainer()
           window.abwa.sidebar.openSidebar()

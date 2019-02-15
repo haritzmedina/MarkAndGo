@@ -241,14 +241,15 @@ class TagManager {
         name: tagGroup.config.name,
         color: ColorUtils.setAlphaToColor(tagGroup.config.color, 0.5),
         handler: (event) => {
-          // Check if it is already marked to get current mark
-          let currentMark = this.getCurrentMarkForCriteria(tagGroup.config.name)
+          // Tags for current button
           let tags = [
             this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name,
             'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
           ]
-          if (!_.isUndefined(currentMark) && !_.isNull(currentMark)) {
-            tags.push(this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + currentMark)
+          // Check if it is already marked to get current mark
+          let mark = window.abwa.specific.assessmentManager.marks[tagGroup.config.name]
+          if (!_.isNull(mark.level)) {
+            tags.push(this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + mark.level.name)
           }
           LanguageUtils.dispatchCustomEvent(Events.annotate, {tags: tags})
         }})
@@ -283,63 +284,11 @@ class TagManager {
         color: tagGroup.config.color,
         elements: tagGroup.tags,
         groupHandler: (event) => {
-          // TODO Go to annotation with that group tag
-          window.abwa.contentAnnotator.goToFirstAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
+          // Go to annotation with that group tag
+          window.abwa.contentAnnotator.goToAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
         },
         buttonHandler: (event) => {
-          // Update all annotations for current document/tag
-          let oldTagList = ['exam:isCriteriaOf:' + tagGroup.config.name]
-          let newTagList = [
-            'exam:isCriteriaOf:' + tagGroup.config.name,
-            'exam:mark:' + event.target.dataset.mark,
-            'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
-          ]
-          window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
-            oldTagList, newTagList,
-            (err, annotations) => {
-              if (err) {
-
-              } else {
-                //
-                console.debug('All annotations with criteria ' + tagGroup.config.name + ' has mark ' + event.target.dataset.mark)
-                // Reload all annotations
-                window.abwa.contentAnnotator.updateAllAnnotations((err, annotations) => {
-                  if (err) {
-                    console.error('Unexpected error when updating annotations')
-                  } else {
-                    window.abwa.contentAnnotator.redrawAnnotations()
-                  }
-                })
-                // If no annotations are found, create one for in page level with selected tags
-                if (annotations.length === 0) {
-                  Alerts.confirmAlert({
-                    title: chrome.i18n.getMessage('noEvidencesFoundForMarkingTitle'),
-                    text: chrome.i18n.getMessage('noEvidencesFoundForMarkingText', event.target.dataset.mark),
-                    alertType: Alerts.alertType.warning,
-                    callback: (err) => {
-                      if (err) {
-                        // Manage error
-                        window.alert('Unable to create alert for: noEvidencesFoundForMarking. Reload the page, and if the error continues please contact administrator.')
-                      } else {
-                        const TextAnnotator = require('./contentAnnotators/TextAnnotator')
-                        window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(TextAnnotator.constructAnnotation(null, newTagList), (err, annotation) => {
-                          if (err) {
-                            Alerts.errorAlert({text: err.message})
-                          } else {
-                            annotations.push(annotation)
-                            // Send event of mark
-                            LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
-                          }
-                        })
-                      }
-                    }
-                  })
-                } else {
-                  // Send event of mark
-                  LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
-                }
-              }
-            })
+          LanguageUtils.dispatchCustomEvent(Events.mark, {criteriaName: tagGroup.config.name, levelName: event.target.dataset.mark})
         }
       })
       this.tagsContainer.marking.append(panel)
@@ -422,9 +371,19 @@ class TagManager {
     tagButton.setAttribute('role', role || 'annotation')
     if (color) {
       $(tagButton).css('background-color', color)
+      tagButton.dataset.baseColor = color
     }
     // Set handler for button
     tagButton.addEventListener('click', handler)
+    // Tag button background color change
+    // TODO It should be better to set it as a CSS property, but currently there is not an option for that
+    tagButton.addEventListener('mouseenter', () => {
+      let darkerAlpha = ColorUtils.colorFromString(tagButton.dataset.baseColor).valpha + 0.2
+      tagButton.style.backgroundColor = ColorUtils.setAlphaToColor(ColorUtils.colorFromString(tagButton.dataset.baseColor), darkerAlpha)
+    })
+    tagButton.addEventListener('mouseleave', () => {
+      tagButton.style.backgroundColor = tagButton.dataset.baseColor
+    })
     return tagButton
   }
 
@@ -432,6 +391,7 @@ class TagManager {
     // Create the container
     let tagGroupTemplate = document.querySelector('#tagGroupTemplate')
     let tagGroup = $(tagGroupTemplate.content.firstElementChild).clone().get(0)
+    tagGroup.dataset.criteria = name
     let tagButtonContainer = $(tagGroup).find('.tagButtonContainer')
     let groupNameSpan = tagGroup.querySelector('.groupName')
     groupNameSpan.innerText = name

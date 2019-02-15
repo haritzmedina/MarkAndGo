@@ -77,7 +77,7 @@ class Alerts {
     }
   }
 
-  static temporalAlert ({text = 'It is done', title = 'Finished', type = Alerts.alertType.info, timer = 1500, position = 'top-end', callback}) {
+  static temporalAlert ({text = 'It is done', title = 'Finished', type = Alerts.alertType.info, timer = 1500, position = 'top-end', toast = false, callback}) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
       if (_.isFunction(callback)) {
@@ -90,7 +90,8 @@ class Alerts {
         title: title, // TODO i18n
         html: text,
         showConfirmButton: false,
-        timer: timer
+        timer: timer,
+        toast: toast
       })
     }
   }
