@@ -15,7 +15,6 @@ const _ = require('lodash')
 require('components-jqueryui')
 const Alerts = require('../../utils/Alerts')
 const Awesomplete = require('awesomplete')
-const Rubric = require('../../model/Rubric')
 
 const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
@@ -31,6 +30,7 @@ class TextAnnotator extends ContentAnnotator {
     this.allAnnotations = null
     this.currentUserProfile = null
     this.highlightClassName = 'highlightedAnnotation'
+    this.lastAnnotation = null
   }
 
   init (callback) {
@@ -860,7 +860,16 @@ class TextAnnotator extends ContentAnnotator {
     let annotations = _.filter(this.currentAnnotations, (annotation) => {
       return annotation.tags.includes(tag)
     })
-    debugger
+    if (annotations.length > 0) {
+      let index = _.indexOf(annotations, this.lastAnnotation)
+      if (index === -1 || index === annotations.length - 1) {
+        this.goToAnnotation(annotations[0])
+        this.lastAnnotation = annotations[0]
+      } else {
+        this.goToAnnotation(annotations[index + 1])
+        this.lastAnnotation = annotations[index + 1]
+      }
+    }
   }
 
   goToAnnotation (annotation) {
