@@ -3,6 +3,7 @@ const _ = require('lodash')
 const HypothesisClientManager = require('../../hypothesis/HypothesisClientManager')
 const Rubric = require('../../model/Rubric')
 const CryptoUtils = require('../../utils/CryptoUtils')
+const AnnotationUtils = require('../../utils/AnnotationUtils')
 
 class CreateHighlighterTask extends Task {
   constructor (config) {
@@ -81,25 +82,20 @@ class CreateHighlighterTask extends Task {
                   }
                 })
               } else {
-                // TODO Check if highlighter for assignment is already created
+                // Check if highlighter for assignment is already created
                 this.hypothesisClientManager.hypothesisClient.searchAnnotations({
                   group: group.id,
                   any: '"exam:cmid:' + rubric.cmid + '"',
-                  limit: 1
+                  wildcard_uri: 'https://hypothes.is/groups/*'
                 }, (err, annotations) => {
                   if (err) {
                     callback(err)
                   } else {
-                    if (annotations.length > 0) {
-                      console.log('Group already created')
-                      callback(null, {nothingDone: true})
-                    } else {
-                      this.createHighlighterAnnotations({
-                        rubric, group, userProfile
-                      }, () => {
-                        callback(null)
-                      })
-                    }
+                    this.updateHighlighterAnnotations({
+                      rubric, annotations, group, userProfile
+                    }, () => {
+                      callback(null)
+                    })
                   }
                 })
               }
@@ -110,12 +106,47 @@ class CreateHighlighterTask extends Task {
     }
   }
 
+  updateHighlighterAnnotations ({rubric, annotations, group, userProfile}, callback) {
+    // Create teacher annotation if not exists
+    this.createTeacherAnnotation({teacherId: userProfile.userid, hypothesisGroup: group}, (err) => {
+      if (err) {
+        callback(new Error(chrome.i18n.getMessage('ErrorRelatingMoodleAndTool') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')))
+      } else {
+        // Restore rubric object
+        rubric.hypothesisGroup = group
+        rubric = Rubric.createRubricFromObject(rubric) // convert to rubric to be able to run toAnnotations() function
+        // Check annotations pending
+        let annotationsPending = _.differenceWith(rubric.toAnnotations(), annotations, AnnotationUtils.areEqual)
+        // Check annotations to remove
+        let annotationsToRemove = _.differenceWith(annotations, rubric.toAnnotations(), AnnotationUtils.areEqual)
+        if (annotationsPending.length === 0 && annotationsToRemove.length === 0) {
+          console.debug('Highlighter is already updated, skipping to the next group')
+          callback(null, {nothingDone: true})
+        } else {
+          this.hypothesisClientManager.hypothesisClient.deleteAnnotations(annotationsToRemove, (err) => {
+            if (err) {
+              callback(new Error(chrome.i18n.getMessage('ErrorConfiguringHighlighter') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')))
+            } else {
+              this.hypothesisClientManager.hypothesisClient.createNewAnnotations(annotationsPending, (err, createdAnnotations) => {
+                if (err) {
+                  callback(new Error(chrome.i18n.getMessage('ErrorConfiguringHighlighter') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')))
+                } else {
+                  console.debug('Highlighter for group updated')
+                  callback(null)
+                }
+              })
+            }
+          })
+        }
+      }
+    })
+  }
+
   createHighlighterAnnotations ({rubric, group, userProfile}, callback) {
     // Generate group annotations
     rubric.hypothesisGroup = group
     rubric = Rubric.createRubricFromObject(rubric) // convert to rubric to be able to run toAnnotations() function
     let annotations = rubric.toAnnotations()
-    console.log(annotations)
     this.createTeacherAnnotation({teacherId: userProfile.userid, hypothesisGroup: group}, (err) => {
       if (err) {
         callback(new Error(chrome.i18n.getMessage('ErrorRelatingMoodleAndTool') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')))
@@ -150,16 +181,29 @@ class CreateHighlighterTask extends Task {
 
   createTeacherAnnotation ({teacherId, hypothesisGroup}, callback) {
     let teacherAnnotation = this.generateTeacherAnnotation(teacherId, hypothesisGroup)
-    this.hypothesisClientManager.hypothesisClient.createNewAnnotation(teacherAnnotation, (err, annotation) => {
+    // Check if annotation already exists
+    this.hypothesisClientManager.hypothesisClient.searchAnnotations({group: hypothesisGroup.id, tags: 'exam:teacher'}, (err, annotations) => {
       if (err) {
-        if (_.isFunction(callback)) {
-          callback(err)
-        }
+
       } else {
-        console.debug('Created teacher annotation: ')
-        console.debug(annotation)
-        if (_.isFunction(callback)) {
-          callback()
+        // If annotation exist and teacher is the same, nothing to do
+        if (annotations.length > 0 && annotations[0].text === teacherAnnotation.text) {
+          if (_.isFunction(callback)) {
+            callback()
+          }
+        } else { // Otherwise, create the annotation
+          this.hypothesisClientManager.hypothesisClient.createNewAnnotation(teacherAnnotation, (err, annotation) => {
+            if (err) {
+              if (_.isFunction(callback)) {
+                callback(err)
+              }
+            } else {
+              console.debug('Created teacher annotation')
+              if (_.isFunction(callback)) {
+                callback()
+              }
+            }
+          })
         }
       }
     })

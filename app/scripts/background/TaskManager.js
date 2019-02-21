@@ -19,8 +19,9 @@ class TaskManager {
             let students = request.data.students
             let courseId = request.data.courseId
             let task = this.prepareCreateHighlightersTask(rubric, students, courseId)
+            let numberOfAnnotationsToCreate = task.activities.length * (_.reduce(_.map(rubric.guideElements, (guideElement) => { return guideElement.levels.length }), (sum, n) => { return sum + n }) + 2)
+            let minutesPending = Math.round(numberOfAnnotationsToCreate / 60)
             this.addTasks(task)
-            let minutesPending = Math.ceil((task.activities.length / 60) * 5)
             sendResponse({minutes: minutesPending})
           }
         }
