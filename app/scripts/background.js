@@ -4,21 +4,6 @@ import 'chromereload/devonly'
 const VersionManager = require('./background/VersionManager')
 const TourManager = require('./background/TourManager')
 
-chrome.runtime.onInstalled.addListener((details) => {
-  console.log('previousVersion', details.previousVersion)
-  // Tour manager
-  let tourManager = new TourManager()
-  tourManager.init((err, isShown) => {
-    // Version manager
-    let versionManager = new VersionManager()
-    if (err || !isShown) {
-      versionManager.init(details.previousVersion)
-    } else {
-      versionManager.setLatestVersion()
-    }
-  })
-})
-
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.pageAction.show(tabId)
 })
@@ -137,3 +122,17 @@ class Background {
 
 window.background = new Background()
 window.background.init()
+
+chrome.runtime.onInstalled.addListener((details) => {
+  // Tour manager
+  let tourManager = new TourManager()
+  tourManager.init((err, isShown) => {
+    // Version manager
+    window.background.versionManager = new VersionManager()
+    if (err || !isShown) {
+      window.background.versionManager.init(details.previousVersion)
+    } else {
+      window.background.versionManager.setLatestVersion()
+    }
+  })
+})
