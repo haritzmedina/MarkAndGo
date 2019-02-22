@@ -55,6 +55,7 @@ class MoodleDownloadManager {
     })
 
     chrome.downloads.onChanged.addListener((downloadItem) => {
+      // Download is pending
       if (this.files[downloadItem.id] && downloadItem.filename && downloadItem.filename.current) {
         // Save download file path
         if (downloadItem.filename.current.startsWith('/')) { // Unix-based filesystem
@@ -62,14 +63,13 @@ class MoodleDownloadManager {
         } else { // Windows-based filesystem
           this.files[downloadItem.id]['localPath'] = encodeURI('file:///' + _.replace(downloadItem.filename.current, /\\/g, '/'))
         }
+      } else if (_.isObject(downloadItem.state) && downloadItem.state.current === 'complete') { // When the download is finished
         // If mag is set in the URL, open a new tab with the document
         if (this.files[downloadItem.id]['mag'] && this.files[downloadItem.id]['studentId']) {
-          setTimeout(() => {
-            let localUrl = this.files[downloadItem.id]['localPath'] + '#mag:' + this.files[downloadItem.id]['mag'] + '&studentId:' + this.files[downloadItem.id]['studentId']
-            chrome.tabs.create({url: localUrl}, (tab) => {
-              this.files[downloadItem.id]['mag'] = null
-            })
-          }, 2000) // TODO Check how can it works for all the download speeds
+          let localUrl = this.files[downloadItem.id]['localPath'] + '#mag:' + this.files[downloadItem.id]['mag'] + '&studentId:' + this.files[downloadItem.id]['studentId']
+          chrome.tabs.create({url: localUrl}, (tab) => {
+            this.files[downloadItem.id]['mag'] = null
+          })
         }
       }
     })
