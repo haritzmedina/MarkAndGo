@@ -1,7 +1,6 @@
 const Events = require('../../contentScript/Events')
 const AnnotationUtils = require('../../utils/AnnotationUtils')
 const Alerts = require('../../utils/Alerts')
-const LanguageUtils = require('../../utils/LanguageUtils')
 const Mark = require('./Mark')
 const _ = require('lodash')
 const Rubric = require('../../model/Rubric')
@@ -96,7 +95,7 @@ class AssessmentManager {
     })
     // Event for tag manager reloaded
     document.addEventListener(Events.mark, (event) => {
-      // TODO Get level for this mark
+      // Get level for this mark
       let criteriaName = event.detail.criteriaName
       let markName = event.detail.levelName
       let level
@@ -106,61 +105,32 @@ class AssessmentManager {
         level = _.find(criteria.levels, (level) => { return level.name === markName })
         this.mark(level)
       } else {
-        // TODO Unable to retrieve criteria or level
+        // Unable to retrieve criteria or level
+        Alerts.errorAlert({title: 'Unable to mark', text: 'There was an error when trying to mark this assignment, please reload the page and try it again.' + chrome.i18n.getMessage('ContactAdministrator')})
       }
-      // Update all annotations for current document/tag
-      /* let oldTagList = ['exam:isCriteriaOf:' + event.details.criteriaName]
-      let newTagList = [
-        'exam:isCriteriaOf:' + event.details.criteriaName,
-        'exam:mark:' + event.details.levelName,
-        'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
-      ]
-      window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
-        oldTagList, newTagList,
-        (err, annotations) => {
-          if (err) {
-
-          } else {
-            //
-            console.debug('All annotations with criteria ' + tagGroup.config.name + ' has mark ' + event.target.dataset.mark)
-            // Reload all annotations
-            window.abwa.contentAnnotator.updateAllAnnotations((err, annotations) => {
-              if (err) {
-                console.error('Unexpected error when updating annotations')
-              } else {
-                window.abwa.contentAnnotator.redrawAnnotations()
-              }
-            })
-            // If no annotations are found, create one for in page level with selected tags
-            if (annotations.length === 0) {
-              Alerts.confirmAlert({
-                title: chrome.i18n.getMessage('noEvidencesFoundForMarkingTitle'),
-                text: chrome.i18n.getMessage('noEvidencesFoundForMarkingText', event.target.dataset.mark),
-                alertType: Alerts.alertType.warning,
-                callback: (err) => {
-                  if (err) {
-                    // Manage error
-                    window.alert('Unable to create alert for: noEvidencesFoundForMarking. Reload the page, and if the error continues please contact administrator.')
-                  } else {
-                    const TextAnnotator = require('./contentAnnotators/TextAnnotator')
-                    window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(TextAnnotator.constructAnnotation(null, newTagList), (err, annotation) => {
-                      if (err) {
-                        Alerts.errorAlert({text: err.message})
-                      } else {
-                        annotations.push(annotation)
-                        // Send event of mark
-                        LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
-                      }
-                    })
-                  }
-                }
-              })
-            } else {
-              // Send event of mark
-              LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
-            }
-          }
-        }) */
+    })
+    document.addEventListener(Events.comment, (event) => {
+      // Retrieve annotation from event
+      let annotation = event.detail.annotation
+      // Retrieve criteria name for annotation
+      let criteriaName = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
+      // Find index in criteria annotations
+      let mark = window.abwa.specific.assessmentManager.marks[criteriaName]
+      if (mark && mark.annotations.length > 0) {
+        let index = _.findIndex(mark.annotations, (annotationMark) => annotationMark.id === annotation.id)
+        if (index > -1) {
+          mark.annotations[index] = annotation
+        }
+        // Update moodle
+        this.updateMoodle(() => {
+          Alerts.temporalAlert({
+            text: 'Comment updated in moodle',
+            title: 'Moodle updated',
+            type: Alerts.alertType.success,
+            toast: true
+          })
+        })
+      }
     })
   }
 
@@ -236,8 +206,10 @@ class AssessmentManager {
       if (criteriaName) {
         // Retrieve criteria from rubric
         let criteria = _.find(window.abwa.rubricManager.rubric.criterias, (criteria) => { return criteria.name === criteriaName })
-        let level = _.find(criteria.levels, (level) => { return level.name === markName })
-        marksForAnno.push({level: level || null, criteria: criteria, annotation: annotation})
+        if (!_.isUndefined(criteria)) {
+          let level = _.find(criteria.levels, (level) => { return level.name === markName })
+          marksForAnno.push({level: level || null, criteria: criteria, annotation: annotation})
+        }
       }
     }
     let unparsedMarks = _.mapValues(_.groupBy(marksForAnno, (mark) => {
@@ -305,8 +277,15 @@ class AssessmentManager {
                   this.updateAnnotationsInHypothesis(annotations, () => {
                     window.abwa.contentAnnotator.updateAllAnnotations()
                   })
-                  // TODO Update moodle
-                  this.updateMoodle()
+                  // Update moodle
+                  this.updateMoodle(() => {
+                    Alerts.temporalAlert({
+                      text: 'The mark is updated in moodle',
+                      title: 'Correctly marked',
+                      type: Alerts.alertType.success,
+                      toast: true
+                    })
+                  })
                 }
               })
             }
@@ -320,8 +299,15 @@ class AssessmentManager {
         this.updateAnnotationsInHypothesis(annotations, () => {
           window.abwa.contentAnnotator.updateAllAnnotations()
         })
-        // TODO Update moodle
-        this.updateMoodle()
+        // Update moodle
+        this.updateMoodle(() => {
+          Alerts.temporalAlert({
+            text: 'The mark is updated in moodle',
+            title: 'Correctly marked',
+            type: Alerts.alertType.success,
+            toast: true
+          })
+        })
       }
       this.marks[criteria.name].level = level
       this.reloadMarksChosen()
