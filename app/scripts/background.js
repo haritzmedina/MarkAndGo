@@ -13,7 +13,6 @@ chrome.tabs.onCreated.addListener((tab) => {
 })
 
 const HypothesisManager = require('./background/HypothesisManager')
-const GoogleSheetsManager = require('./background/GoogleSheetsManager')
 const Popup = require('./popup/Popup')
 const MoodleDownloadManager = require('./background/MoodleDownloadManager')
 const MoodleBackgroundManager = require('./background/MoodleBackgroundManager')
@@ -31,10 +30,6 @@ class Background {
     // Initialize hypothesis manager
     this.hypothesisManager = new HypothesisManager()
     this.hypothesisManager.init()
-
-    // Initialize google sheets manager
-    this.googleSheetsManager = new GoogleSheetsManager()
-    this.googleSheetsManager.init()
 
     // Initialize moodle download manager
     this.moodleDownloadManager = new MoodleDownloadManager()
