@@ -32,15 +32,16 @@ class MoodleDownloadManager {
           if (err) {
             suggest() // Suggest default
           } else {
+            let fileExtensionArray = []
             if (fileExtensions) {
-              let fileExtensionArray = JSON.parse(fileExtensions.data).split(',')
-              let originalFilenameExtension = _.last(downloadItem.filename.split('.'))
-              let matchExtension = _.find(fileExtensionArray, (ext) => { return ext === originalFilenameExtension })
-              if (_.isString(matchExtension)) {
-                suggest({filename: downloadItem.filename + '.txt'})
-              } else {
-                suggest()
-              }
+              fileExtensionArray = (JSON.parse(fileExtensions.data) + defaultFileExtensionsAsPlainText).split(',')
+            } else {
+              fileExtensionArray = defaultFileExtensionsAsPlainText.split(',')
+            }
+            let originalFilenameExtension = _.last(downloadItem.filename.split('.'))
+            let matchExtension = _.find(fileExtensionArray, (ext) => { return ext === originalFilenameExtension })
+            if (_.isString(matchExtension)) {
+              suggest({filename: downloadItem.filename + '.txt'})
             } else {
               suggest()
             }
@@ -108,5 +109,7 @@ class MoodleDownloadManager {
     })
   }
 }
+
+const defaultFileExtensionsAsPlainText = 'xml,xsl,xslt,xquery,xsql,'
 
 module.exports = MoodleDownloadManager
