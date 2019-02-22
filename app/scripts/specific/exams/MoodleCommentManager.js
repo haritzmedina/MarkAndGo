@@ -55,7 +55,7 @@ class MoodleCommentManager {
           callback: callback
         })
       } else if (event.detail.replyType === 'update') {
-
+        // TODO Edit current reply
       }
     }
   }

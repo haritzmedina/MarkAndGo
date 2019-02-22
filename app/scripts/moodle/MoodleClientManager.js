@@ -118,8 +118,10 @@ class MoodleClientManager {
     })
   }
 
-  removeSubmissionComment () {
+  removeSubmissionComment ({commentId, annotationId, callback}) {
+    if (commentId) {
 
+    }
   }
 
   getSubmissionComments () {

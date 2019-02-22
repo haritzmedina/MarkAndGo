@@ -15,6 +15,10 @@ class Options {
       document.querySelector('#apiSimulationCheckbox').checked = isActivated.activated
     })
 
+    chrome.runtime.sendMessage({scope: 'moodle', cmd: 'isAutoOpenFilesActivated'}, (isActivated) => {
+      document.querySelector('#autoOpenCheckbox').checked = isActivated.activated
+    })
+
     // Add event listeners to on change options
     document.querySelector('#fileFormats').addEventListener('change', () => {
       this.updateFileFormats()
@@ -26,6 +30,10 @@ class Options {
 
     document.querySelector('#apiSimulationCheckbox').addEventListener('change', () => {
       this.updateApiSimulationCheckbox()
+    })
+
+    document.querySelector('#autoOpenCheckbox').addEventListener('change', () => {
+      this.updateAutoOpenCheckbox()
     })
 
     window.addEventListener('beforeunload', () => {
@@ -50,6 +58,17 @@ class Options {
     chrome.runtime.sendMessage({
       scope: 'moodle',
       cmd: 'setApiSimulationActivation',
+      data: {isActivated: isChecked}
+    }, (response) => {
+      console.debug('Api simulation is updated to: ' + response.activated)
+    })
+  }
+
+  updateAutoOpenCheckbox () {
+    let isChecked = document.querySelector('#autoOpenCheckbox').checked
+    chrome.runtime.sendMessage({
+      scope: 'moodle',
+      cmd: 'setAutoOpenFiles',
       data: {isActivated: isChecked}
     }, (response) => {
       console.debug('Api simulation is updated to: ' + response.activated)

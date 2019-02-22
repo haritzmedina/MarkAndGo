@@ -70,6 +70,19 @@ class MoodleDownloadManager {
           chrome.tabs.create({url: localUrl}, (tab) => {
             this.files[downloadItem.id]['mag'] = null
           })
+        } else {
+          // Check if auto-open option is activated
+          ChromeStorage.getData('autoOpenFiles', ChromeStorage.sync, (err, result) => {
+            if (err) {
+
+            } else {
+              let autoOpen = result.activated // TODO Change
+              if (autoOpen) {
+                let localUrl = this.files[downloadItem.id]['localPath'] + '#autoOpen:true'
+                chrome.tabs.create({url: localUrl})
+              }
+            }
+          })
         }
       }
     })

@@ -81,6 +81,22 @@ class MoodleBackgroundManager {
               sendResponse({saved: true})
             }
           })
+        } else if (request.cmd === 'isAutoOpenFilesActivated') {
+          ChromeStorage.getData('autoOpenFiles', ChromeStorage.sync, (err, isActivated) => {
+            if (err) {
+              sendResponse({activated: false})
+            } else {
+              sendResponse(isActivated || {activated: false})
+            }
+          })
+        } else if (request.cmd === 'setAutoOpenFiles') {
+          ChromeStorage.setData('autoOpenFiles', {activated: request.data.isActivated}, ChromeStorage.sync, (err, response) => {
+            if (err) {
+              sendResponse({err: err, saved: false})
+            } else {
+              sendResponse({saved: true})
+            }
+          })
         }
       }
     })

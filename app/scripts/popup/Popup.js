@@ -15,9 +15,11 @@ class Popup {
   activate () {
     this.activated = true
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {action: 'initContentScript'}, (response) => {
-        chrome.pageAction.setIcon({tabId: tabs[0].id, path: 'images/icon-38.png'})
-      })
+      if (tabs.length > 0) {
+        chrome.tabs.sendMessage(tabs[0].id, {action: 'initContentScript'}, (response) => {
+          chrome.pageAction.setIcon({tabId: tabs[0].id, path: 'images/icon-38.png'})
+        })
+      }
     })
   }
 }

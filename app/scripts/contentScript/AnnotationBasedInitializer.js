@@ -39,6 +39,16 @@ class AnnotationBasedInitializer {
       return false
     }
   }
+
+  static isAutoOpenHashParam () {
+    let decodedUri = decodeURIComponent(window.location.href)
+    let params = URLUtils.extractHashParamsFromUrl(decodedUri)
+    if (!_.isEmpty(params) && _.has(params, 'autoOpen')) {
+      return params['autoOpen']
+    } else {
+      return false
+    }
+  }
 }
 
 module.exports = AnnotationBasedInitializer
