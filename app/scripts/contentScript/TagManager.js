@@ -317,6 +317,8 @@ class TagManager {
         return tagGroup.config.name === annotation.tags[0].replace('exam:isCriteriaOf:', '')
       })
     }))
+    // Remove undefined values
+    tagGroups = _.compact(tagGroups)
     // Remove tagGroups elements which are not the mark for the current student
     _.forEach(tagGroups, (tagGroup) => {
       _.remove(tagGroup.tags, (tag) => {
@@ -503,7 +505,7 @@ class TagManager {
 
   findAnnotationTagInstance (annotation) {
     let groupTag = this.getGroupFromAnnotation(annotation)
-    if (annotation.tags.length > 1) {
+    if (_.isObject(groupTag)) {
       // Check if has code defined, because other tags can be presented (like exam:studentId:X)
       if (this.hasCodeAnnotation(annotation)) {
         return this.getCodeFromAnnotation(annotation, groupTag)
@@ -519,19 +521,29 @@ class TagManager {
     let tags = annotation.tags
     let criteriaTag = _.find(tags, (tag) => {
       return tag.includes('exam:isCriteriaOf:')
-    }).replace('exam:isCriteriaOf:')
-    return _.find(window.abwa.tagManager.currentTags, (tagGroupInstance) => {
-      return criteriaTag.includes(tagGroupInstance.config.name)
     })
+    if (criteriaTag) {
+      let criteriaName = criteriaTag.replace('exam:isCriteriaOf:', '')
+      return _.find(window.abwa.tagManager.currentTags, (tagGroupInstance) => {
+        return criteriaName === tagGroupInstance.config.name
+      }) || null
+    } else {
+      return null
+    }
   }
 
   getCodeFromAnnotation (annotation, groupTag) {
     let markTag = _.find(annotation.tags, (tag) => {
       return tag.includes('exam:mark:')
-    }).replace('exam:mark:')
-    return _.find(groupTag.tags, (tagInstance) => {
-      return markTag.includes(tagInstance.name)
     })
+    if (markTag) {
+      let markName = markTag.replace('exam:mark:', '')
+      return _.find(groupTag.tags, (tagInstance) => {
+        return markName === tagInstance.name
+      }) || null
+    } else {
+      return null
+    }
   }
 
   hasCodeAnnotation (annotation) {

@@ -30,10 +30,12 @@ class TextAnnotator extends ContentAnnotator {
     this.allAnnotations = null
     this.currentUserProfile = null
     this.highlightClassName = 'highlightedAnnotation'
+    this.noUsefulHighlightClassName = 'noUsefulHighlightedAnnotation'
     this.lastAnnotation = null
   }
 
   init (callback) {
+    console.debug('Initializing TextAnnotator')
     this.initEvents(() => {
       // Retrieve current user profile
       this.currentUserProfile = window.abwa.groupSelector.user
@@ -46,6 +48,7 @@ class TextAnnotator extends ContentAnnotator {
             }
           }
           this.initAnnotationsObserver(() => {
+            console.debug('Initialized TextAnnotator')
             if (_.isFunction(callback)) {
               callback()
             }
@@ -59,14 +62,12 @@ class TextAnnotator extends ContentAnnotator {
     this.initSelectionEvents(() => {
       this.initAnnotateEvent(() => {
         this.initModeChangeEvent(() => {
-          this.initUserFilterChangeEvent(() => {
-            this.initReloadAnnotationsEvent(() => {
-              this.initDocumentURLChangeEvent(() => {
-                // Reload annotations periodically
-                if (_.isFunction(callback)) {
-                  callback()
-                }
-              })
+          this.initReloadAnnotationsEvent(() => {
+            this.initDocumentURLChangeEvent(() => {
+              // Reload annotations periodically
+              if (_.isFunction(callback)) {
+                callback()
+              }
             })
           })
         })
@@ -90,14 +91,6 @@ class TextAnnotator extends ContentAnnotator {
     }
   }
 
-  initUserFilterChangeEvent (callback) {
-    this.events.userFilterChangeEvent = {element: document, event: Events.userFilterChange, handler: this.createUserFilterChangeEventHandler()}
-    this.events.userFilterChangeEvent.element.addEventListener(this.events.userFilterChangeEvent.event, this.events.userFilterChangeEvent.handler, false)
-    if (_.isFunction(callback)) {
-      callback()
-    }
-  }
-
   initReloadAnnotationsEvent (callback) {
     this.reloadInterval = setInterval(() => {
       this.updateAllAnnotations(() => {
@@ -107,34 +100,6 @@ class TextAnnotator extends ContentAnnotator {
     if (_.isFunction(callback)) {
       callback()
     }
-  }
-
-  createUserFilterChangeEventHandler () {
-    return (event) => {
-      // This is only allowed in mode index
-      if (window.abwa.modeManager.mode === ModeManager.modes.index) {
-        let filteredUsers = event.detail.filteredUsers
-        // Unhighlight all annotations
-        this.unHighlightAllAnnotations()
-        // Retrieve annotations for filtered users
-        this.currentAnnotations = this.retrieveAnnotationsForUsers(filteredUsers)
-        LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
-        this.highlightAnnotations(this.currentAnnotations)
-      }
-    }
-  }
-
-  /**
-   * Retrieve from all annotations for the current document, those who user is one of the list in users
-   * @param users
-   * @returns {Array}
-   */
-  retrieveAnnotationsForUsers (users) {
-    return _.filter(this.allAnnotations, (annotation) => {
-      return _.find(users, (user) => {
-        return annotation.user === 'acct:' + user + '@hypothes.is'
-      })
-    })
   }
 
   initModeChangeEvent (callback) {
@@ -357,7 +322,7 @@ class TextAnnotator extends ContentAnnotator {
         this.currentAnnotations = this.retrieveCurrentAnnotations()
         LanguageUtils.dispatchCustomEvent(Events.updatedCurrentAnnotations, {currentAnnotations: this.currentAnnotations})
         // Highlight annotations in the DOM
-        this.highlightAnnotations(this.currentAnnotations)
+        this.redrawAnnotations()
         if (_.isFunction(callback)) {
           callback()
         }
@@ -416,24 +381,16 @@ class TextAnnotator extends ContentAnnotator {
   }
 
   highlightAnnotation (annotation, callback) {
-    let classNameToHighlight = this.retrieveHighlightClassName(annotation)
     // Get annotation color for an annotation
     let tagInstance = window.abwa.tagManager.findAnnotationTagInstance(annotation)
     if (tagInstance) {
       let color = tagInstance.getColor()
+      // Retrieve highlight class name
+      let classNameToHighlight = this.retrieveHighlightClassName(annotation)
       try {
-        let highlightedElements = []
-        // TODO Remove this case for google drive
-        if (window.location.href.includes('drive.google.com')) {
-          // Ensure popup exists
-          if (document.querySelector('.a-b-r-x')) {
-            highlightedElements = DOMTextUtils.highlightContent(
-              annotation.target[0].selector, classNameToHighlight, annotation.id)
-          }
-        } else {
-          highlightedElements = DOMTextUtils.highlightContent(
-            annotation.target[0].selector, classNameToHighlight, annotation.id)
-        }
+        // Highlight elements
+        let highlightedElements = DOMTextUtils.highlightContent(
+          annotation.target[0].selector, classNameToHighlight, annotation.id)
         // Highlight in same color as button
         highlightedElements.forEach(highlightedElement => {
           // If need to highlight, set the color corresponding to, in other case, maintain its original color
@@ -457,8 +414,6 @@ class TextAnnotator extends ContentAnnotator {
         })
         // Create context menu event for highlighted elements
         this.createContextMenuForAnnotation(annotation)
-        // Create click event to move to next annotation
-        this.createNextAnnotationHandler(annotation)
         // Create double click event handler
         this.createDoubleClickEventHandler(annotation)
       } catch (e) {
@@ -471,6 +426,23 @@ class TextAnnotator extends ContentAnnotator {
           callback()
         }
       }
+    } else {
+      let color = 'rgba(0, 0, 0, 0.5)' // Neutral color for elements to remove
+      try {
+        // Highlight elements
+        let highlightedElements = DOMTextUtils.highlightContent(
+          annotation.target[0].selector, this.noUsefulHighlightClassName, annotation.id)
+        highlightedElements.forEach(highlightedElement => {
+          // If need to highlight, set the color corresponding to, in other case, maintain its original color
+          $(highlightedElement).css('background-color', color)
+          // Add title
+          highlightedElement.title = 'This annotation pertains to a removed criteria in the evaluation rubric. Please consider removing it.'
+          // Create context menu event for highlighted elements
+          this.createContextMenuForNonUsefulAnnotation(annotation)
+        })
+      } finally {
+
+      }
     }
   }
 
@@ -481,39 +453,6 @@ class TextAnnotator extends ContentAnnotator {
       highlight.addEventListener('dblclick', () => {
         this.commentAnnotationHandler(annotation)
       })
-    }
-  }
-
-  createNextAnnotationHandler (annotation) {
-    let annotationIndex = _.findIndex(
-      this.currentAnnotations,
-      (currentAnnotation) => { return currentAnnotation.id === annotation.id })
-    let nextAnnotationIndex = _.findIndex(
-      this.currentAnnotations,
-      (currentAnnotation) => { return _.isEqual(currentAnnotation.tags, annotation.tags) },
-      annotationIndex + 1)
-    // If not next annotation found, retrieve the first one
-    if (nextAnnotationIndex === -1) {
-      nextAnnotationIndex = _.findIndex(
-        this.currentAnnotations,
-        (currentAnnotation) => { return _.isEqual(currentAnnotation.tags, annotation.tags) })
-    }
-    // If annotation is different, create event
-    if (nextAnnotationIndex !== annotationIndex) {
-      let highlightedElements = document.querySelectorAll('[data-annotation-id="' + annotation.id + '"]')
-      for (let i = 0; i < highlightedElements.length; i++) {
-        let highlightedElement = highlightedElements[i]
-        highlightedElement.addEventListener('click', () => {
-          // If mode is mark or view, move to next annotation
-          if (window.abwa.modeManager.mode === ModeManager.modes.mark || window.abwa.modeManager.mode === ModeManager.modes.view) {
-            this.goToAnnotation(this.currentAnnotations[nextAnnotationIndex])
-          }
-        })
-        // Add css clickable if mode manager is mark or view
-        if (window.abwa.modeManager.mode === ModeManager.modes.mark || window.abwa.modeManager.mode === ModeManager.modes.view) {
-          highlightedElement.dataset.clickable = 'true'
-        }
-      }
     }
   }
 
@@ -544,6 +483,28 @@ class TextAnnotator extends ContentAnnotator {
               this.commentAnnotationHandler(annotation)
             } else if (key === 'reply') {
               this.replyAnnotationHandler(annotation)
+            }
+          },
+          items: items
+        }
+      }
+    })
+  }
+
+  createContextMenuForNonUsefulAnnotation (annotation) {
+    $.contextMenu({
+      selector: '[data-annotation-id="' + annotation.id + '"]',
+      build: () => {
+        // Create items for context menu
+        let items = {}
+        // If current user is the same as author, allow to remove annotation or add a comment
+        if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
+          items['delete'] = {name: 'Delete annotation'}
+        }
+        return {
+          callback: (key) => {
+            if (key === 'delete') {
+              this.deleteAnnotationHandler(annotation)
             }
           },
           items: items

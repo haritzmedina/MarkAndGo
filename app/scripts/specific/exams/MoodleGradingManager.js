@@ -1,9 +1,6 @@
-const Events = require('../../contentScript/Events')
 const MoodleClientManager = require('../../moodle/MoodleClientManager')
 const MoodleUtils = require('../../moodle/MoodleUtils')
 const _ = require('lodash')
-const Alerts = require('../../utils/Alerts')
-const AnnotationUtils = require('../../utils/AnnotationUtils')
 
 class MoodleGradingManager {
   constructor () {
@@ -14,13 +11,6 @@ class MoodleGradingManager {
   init (callback) {
     this.moodleClientManager = new MoodleClientManager(window.abwa.rubricManager.rubric.moodleEndpoint)
     this.moodleClientManager.init(() => {
-      // Create event for comment update
-      this.events.comment = {
-        element: document,
-        event: Events.comment,
-        handler: this.markAnnotationCreateEventHandler()
-      }
-      this.events.comment.element.addEventListener(this.events.comment.event, this.events.comment.handler, false)
       if (_.isFunction(callback)) {
         callback()
       }
@@ -88,12 +78,6 @@ class MoodleGradingManager {
           callback(err)
         }
       } else {
-        Alerts.temporalAlert({
-          text: 'The mark is updated in moodle',
-          title: 'Correctly marked',
-          type: Alerts.alertType.success,
-          toast: true
-        })
         if (_.isFunction(callback)) {
           callback(null)
         }
@@ -196,52 +180,6 @@ class MoodleGradingManager {
     if (_.isFunction(callback)) {
       callback()
     }
-  }
-
-  updateAnnotationsFromOtherFiles (annotation, callback) {
-    // Get all annotations with same criteria and student
-    let criteria = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
-    let mark = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:mark:')
-    window.abwa.hypothesisClientManager.hypothesisClient.searchAnnotations({
-      tags: 'exam:isCriteriaOf:' + criteria,
-      group: window.abwa.groupSelector.currentGroup.id
-    }, (err, oldTagsAnnotations) => {
-      if (err) {
-
-      } else {
-        let cmid = window.abwa.rubricManager.rubric.cmid
-        // Filter only the ones which are not configuration annotations and are for this cmid
-        oldTagsAnnotations = _.filter(oldTagsAnnotations, (anno) => {
-          return anno.uri !== window.abwa.groupSelector.currentGroup.links.html &&
-            _.find(anno.tags, (tag) => {
-              return tag === 'exam:cmid:' + cmid
-            })
-        })
-        let promises = []
-        for (let i = 0; i < oldTagsAnnotations.length; i++) {
-          let oldTagAnnotation = oldTagsAnnotations[i]
-          promises.push(new Promise((resolve, reject) => {
-            oldTagAnnotation.tags = ['exam:isCriteriaOf:' + criteria, 'exam:mark:' + mark, 'exam:cmid:' + cmid]
-            window.abwa.hypothesisClientManager.hypothesisClient.updateAnnotation(oldTagAnnotation.id, oldTagAnnotation, (err, annotation) => {
-              if (err) {
-                reject(new Error('Unable to update annotation ' + oldTagAnnotation.id))
-              } else {
-                resolve(annotation)
-              }
-            })
-          }))
-        }
-        let annotations = []
-        Promise.all(promises).then((result) => {
-          // All annotations updated
-          annotations = result
-        }).finally((result) => {
-          if (_.isFunction(callback)) {
-            callback(null, annotations)
-          }
-        })
-      }
-    })
   }
 }
 
