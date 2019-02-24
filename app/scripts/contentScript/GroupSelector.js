@@ -47,7 +47,7 @@ class GroupSelector {
           }
         } else {
           // Warn user not group is defined, configure tool first
-          Alerts.errorAlert({text: 'You need to configure the tool before start marking exams. Make sure that you are correctly logged in Hypothes.is.', title: 'Tool is not correctly configured'}) // TODO i18n
+          Alerts.errorAlert({text: 'If you are a teacher you need to configure Mark&Go first.<br/>If you are a student, you need to join feedback group first.', title: 'Unable to start Mark&Go'}) // TODO i18n
         }
       }
     })
