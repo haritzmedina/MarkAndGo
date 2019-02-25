@@ -4,7 +4,7 @@ import 'chromereload/devonly'
 const VersionManager = require('./background/VersionManager')
 const TourManager = require('./background/TourManager')
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((tabId) => {
   chrome.pageAction.show(tabId)
 })
 
@@ -45,38 +45,18 @@ class Background {
 
     // Initialize page_action event handler
     chrome.pageAction.onClicked.addListener((tab) => {
-      // Check if current tab is a local file
-      if (tab.url.startsWith('file://')) {
-        // Check if permission to access file URL is enabled
-        chrome.extension.isAllowedFileSchemeAccess((isAllowedAccess) => {
-          if (isAllowedAccess === false) {
-            chrome.tabs.create({url: chrome.runtime.getURL('pages/filePermission.html')})
-          } else {
-            if (this.tabs[tab.id]) {
-              if (this.tabs[tab.id].activated) {
-                this.tabs[tab.id].deactivate()
-              } else {
-                this.tabs[tab.id].activate()
-              }
-            } else {
-              this.tabs[tab.id] = new Popup()
-              this.tabs[tab.id].activate()
-            }
-          }
-        })
-      } else {
-        if (this.tabs[tab.id]) {
-          if (this.tabs[tab.id].activated) {
-            this.tabs[tab.id].deactivate()
-          } else {
-            this.tabs[tab.id].activate()
-          }
+      if (this.tabs[tab.id]) {
+        if (this.tabs[tab.id].activated) {
+          this.tabs[tab.id].deactivate()
         } else {
-          this.tabs[tab.id] = new Popup()
           this.tabs[tab.id].activate()
         }
+      } else {
+        this.tabs[tab.id] = new Popup()
+        this.tabs[tab.id].activate()
       }
     })
+
     // On tab is reloaded
     chrome.tabs.onUpdated.addListener((tabId) => {
       if (this.tabs[tabId]) {
