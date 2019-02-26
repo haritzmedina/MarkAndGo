@@ -1,6 +1,7 @@
 const MoodleClientManager = require('../../moodle/MoodleClientManager')
 const MoodleUtils = require('../../moodle/MoodleUtils')
 const _ = require('lodash')
+const linkifyUrls = require('linkify-urls')
 
 class MoodleGradingManager {
   constructor () {
@@ -47,9 +48,14 @@ class MoodleGradingManager {
       let text = annotation.text
       let feedbackCommentElement = ''
       if (text) {
+        let urlizedText = linkifyUrls(text, {
+          attributes: {
+            target: '_blank'
+          }
+        })
         let quoteSelector = _.find(annotation.target[0].selector, (selector) => { return selector.type === 'TextQuoteSelector' })
         if (quoteSelector) {
-          feedbackCommentElement = '<b>' + text + '</b><br/><a href="' + url + '">See in context</a>'
+          feedbackCommentElement = '<b>' + urlizedText + '</b><br/><a href="' + url + '">See in context</a>'
         }
       } else {
         feedbackCommentElement = '<b>-</b><br/><a href="' + url + '">See in context</a>'
