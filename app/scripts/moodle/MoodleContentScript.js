@@ -19,94 +19,101 @@ class MoodleContentScript {
   }
 
   init (callback) {
-    this.showToolIsConfiguring()
-    // Create hypothesis client
-    this.initHypothesisClient(() => {
-      MoodleScraping.scrapAssignmentData((err, assignmentData) => {
-        if (err) {
-
-        } else {
-          this.cmid = assignmentData.cmid
-          this.moodleEndpoint = assignmentData.moodleEndpoint
-          this.assignmentName = assignmentData.assignmentName
-          // Create moodle client
-          this.moodleClientManager = new MoodleClientManager(this.moodleEndpoint)
-          this.moodleClientManager.init((err) => {
+    // Ask for configuration
+    Alerts.confirmAlert({title: 'Mark&Go assignment configuration',
+      text: 'Do you want to configure this assignment to mark using Mark&Go?',
+      cancelCallback: () => {
+        callback(null)
+      },
+      callback: () => {
+        // Create hypothesis client
+        this.initHypothesisClient(() => {
+          MoodleScraping.scrapAssignmentData((err, assignmentData) => {
             if (err) {
-              // Unable to init moodle client manager
-              Alerts.errorAlert({text: 'Unable to retrieve rubric from moodle, have you the required permissions to get the rubric via API?'})
-              callback(err)
+
             } else {
-              let promises = []
-              // Get rubric
-              promises.push(new Promise((resolve, reject) => {
-                this.getRubric(assignmentData.cmid, assignmentData.courseId, (err, rubric) => {
-                  if (err) {
-                    reject(err)
-                  } else {
-                    resolve(rubric)
-                  }
-                })
-              }))
-              // Get students
-              promises.push(new Promise((resolve, reject) => {
-                this.getStudents(assignmentData.courseId, (err, rubric) => {
-                  if (err) {
-                    reject(err)
-                  } else {
-                    resolve(rubric)
-                  }
-                })
-              }))
-              Promise.all(promises).catch((rejects) => {
-                let reject = _.isArray(rejects) ? rejects[0] : rejects
-                Alerts.errorAlert({
-                  title: 'Something went wrong',
-                  text: reject.message
-                })
-              }).then((resolves) => {
-                if (resolves && resolves.length > 1) {
-                  let rubric = null
-                  let students = null
-                  if (LanguageUtils.isInstanceOf(resolves[0], Rubric)) {
-                    rubric = resolves[0]
-                    students = resolves[1]
-                  } else {
-                    rubric = resolves[1]
-                    students = resolves[0]
-                  }
-                  // Send task to background
-                  chrome.runtime.sendMessage({scope: 'task', cmd: 'createHighlighters', data: {rubric: CircularJSON.stringifyStrict(rubric), students: students, courseId: assignmentData.courseId}}, (result) => {
-                    if (result.err) {
-                      Alerts.errorAlert({
-                        title: 'Something went wrong',
-                        text: 'Error when sending createHighlighters to the background. Please try it again.'
+              this.cmid = assignmentData.cmid
+              this.moodleEndpoint = assignmentData.moodleEndpoint
+              this.assignmentName = assignmentData.assignmentName
+              // Create moodle client
+              this.moodleClientManager = new MoodleClientManager(this.moodleEndpoint)
+              this.moodleClientManager.init((err) => {
+                if (err) {
+                  // Unable to init moodle client manager
+                  Alerts.errorAlert({text: 'Unable to retrieve rubric from moodle, have you the required permissions to get the rubric via API?'})
+                  callback(err)
+                } else {
+                  let promises = []
+                  // Get rubric
+                  promises.push(new Promise((resolve, reject) => {
+                    this.getRubric(assignmentData.cmid, assignmentData.courseId, (err, rubric) => {
+                      if (err) {
+                        reject(err)
+                      } else {
+                        resolve(rubric)
+                      }
+                    })
+                  }))
+                  // Get students
+                  promises.push(new Promise((resolve, reject) => {
+                    this.getStudents(assignmentData.courseId, (err, rubric) => {
+                      if (err) {
+                        reject(err)
+                      } else {
+                        resolve(rubric)
+                      }
+                    })
+                  }))
+                  Promise.all(promises).catch((rejects) => {
+                    let reject = _.isArray(rejects) ? rejects[0] : rejects
+                    Alerts.errorAlert({
+                      title: 'Something went wrong',
+                      text: reject.message
+                    })
+                  }).then((resolves) => {
+                    if (resolves && resolves.length > 1) {
+                      let rubric = null
+                      let students = null
+                      if (LanguageUtils.isInstanceOf(resolves[0], Rubric)) {
+                        rubric = resolves[0]
+                        students = resolves[1]
+                      } else {
+                        rubric = resolves[1]
+                        students = resolves[0]
+                      }
+                      // Send task to background
+                      chrome.runtime.sendMessage({scope: 'task', cmd: 'createHighlighters', data: {rubric: CircularJSON.stringifyStrict(rubric), students: students, courseId: assignmentData.courseId}}, (result) => {
+                        if (result.err) {
+                          Alerts.errorAlert({
+                            title: 'Something went wrong',
+                            text: 'Error when sending createHighlighters to the background. Please try it again.'
+                          })
+                        } else {
+                          let minutes = result.minutes
+                          Alerts.infoAlert({
+                            title: 'Configuration started',
+                            text: 'We are configuring everything to start marking students exams using Mark&Go.' +
+                              `This can take around <b>${minutes} minute(s)</b>.` +
+                              'You can close this window, we will notify you when it is finished.'
+                          })
+                          // Show message
+                          callback(null)
+                        }
                       })
-                    } else {
-                      let minutes = result.minutes
-                      Alerts.infoAlert({
-                        title: 'Configuration started',
-                        text: 'We are configuring everything to start marking students exams using Mark&Go.' +
-                          `This can take around <b>${minutes} minute(s)</b>.` +
-                          'You can close this window, we will notify you when it is finished.'
-                      })
-                      // Show message
-                      callback(null)
                     }
+                  }).catch((rejects) => {
+                    let reject = _.isArray(rejects) ? rejects[0] : rejects
+                    Alerts.errorAlert({
+                      title: 'Something went wrong',
+                      text: reject.message + '.\n' + chrome.i18n.getMessage('ContactAdministrator')
+                    })
                   })
                 }
-              }).catch((rejects) => {
-                let reject = _.isArray(rejects) ? rejects[0] : rejects
-                Alerts.errorAlert({
-                  title: 'Something went wrong',
-                  text: reject.message + '.\n' + chrome.i18n.getMessage('ContactAdministrator')
-                })
               })
             }
           })
-        }
-      })
-    })
+        })
+      }})
   }
 
   getRubric (cmid, courseId, callback) {
