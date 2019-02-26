@@ -353,7 +353,7 @@ class TagManager {
         color: tagGroup.config.color,
         elements: tagGroup.tags,
         buttonHandler: (event) => {
-          window.abwa.contentAnnotator.goToFirstAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
+          window.abwa.contentAnnotator.goToAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
         }
       })
       this.tagsContainer.viewing.append(panel)
