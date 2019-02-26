@@ -15,6 +15,7 @@ const _ = require('lodash')
 require('components-jqueryui')
 const Alerts = require('../../utils/Alerts')
 const Awesomplete = require('awesomplete')
+const linkifyUrls = require('linkify-urls')
 
 const ANNOTATION_OBSERVER_INTERVAL_IN_SECONDS = 3
 const ANNOTATIONS_UPDATE_INTERVAL_IN_SECONDS = 60
@@ -451,7 +452,16 @@ class TextAnnotator extends ContentAnnotator {
     for (let i = 0; i < highlights.length; i++) {
       let highlight = highlights[i]
       highlight.addEventListener('dblclick', () => {
-        this.commentAnnotationHandler(annotation)
+        if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
+          let replies = this.getRepliesForAnnotation(annotation)
+          if (replies.length > 0) {
+            this.replyAnnotationHandler(annotation)
+          } else {
+            this.commentAnnotationHandler(annotation)
+          }
+        } else if (window.abwa.roleManager.role === RolesManager.roles.student) {
+          this.replyAnnotationHandler(annotation)
+        }
       })
     }
   }
@@ -578,9 +588,13 @@ class TextAnnotator extends ContentAnnotator {
   }
 
   createRepliesData (annotation) {
+    let htmlText = ''
+    // Add feedback comment text
+    htmlText += this.createReplyLog(annotation)
+    htmlText += '<hr/>'
+    // get replies for this annotation
     let replies = this.getRepliesForAnnotation(annotation)
     // What and who
-    let htmlText = ''
     for (let i = 0; i < replies.length - 1; i++) {
       let reply = replies[i]
       htmlText += this.createReplyLog(reply)
@@ -616,8 +630,13 @@ class TextAnnotator extends ContentAnnotator {
       let username = reply.user.split('acct:')[1].split('@hypothes.is')[0]
       htmlText += '<span class="reply_user">' + username + ': </span>'
     }
+    let urlizedReplyText = linkifyUrls(reply.text, {
+      attributes: {
+        target: '_blank'
+      }
+    })
     // Add comment
-    htmlText += '<span class="reply_text">' + reply.text + '</span>'
+    htmlText += '<span class="reply_text">' + urlizedReplyText + '</span>'
     return htmlText
   }
 
