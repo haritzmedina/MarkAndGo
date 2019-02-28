@@ -437,7 +437,16 @@ class TextAnnotator extends ContentAnnotator {
           // If need to highlight, set the color corresponding to, in other case, maintain its original color
           $(highlightedElement).css('background-color', color)
           // Add title
-          highlightedElement.title = 'This annotation pertains to a removed criteria in the evaluation rubric. Please consider removing it.'
+          let criteriaName = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:isCriteriaOf:')
+          let levelName = AnnotationUtils.getTagSubstringFromAnnotation(annotation, 'exam:mark:')
+          let criteriaLevelText = ''
+          if (_.isString(levelName)) {
+            criteriaLevelText = 'This annotation pertains to the criteria ' + criteriaName + ' with level ' + levelName + ' which is not in your rubric.\n'
+          } else {
+            criteriaLevelText = 'This annotation pertains to the criteria ' + criteriaName + ' which is not in your rubric.\n'
+          }
+          highlightedElement.title = criteriaLevelText +
+            'Please consider re-marking this assignment (if the criteria exists) or deleting this annotation.'
           // Create context menu event for highlighted elements
           this.createContextMenuForNonUsefulAnnotation(annotation)
         })
