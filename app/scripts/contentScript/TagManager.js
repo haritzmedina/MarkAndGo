@@ -172,12 +172,15 @@ class TagManager {
         }
       }
     }
+    // Reorder tag groups individual elements (levels in rubric)
     tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => {
       // TODO Check all elements, not only tags[0]
-      if (_.isNaN(_.parseInt(tagGroup.tags[0].name))) {
-        tagGroup.tags = _.sortBy(tagGroup.tags, 'name')
+      if (_.has(tagGroup.tags[0], 'options.levelId')) {
+        tagGroup.tags = _.sortBy(tagGroup.tags, 'options.levelId') // By level id if it is set
+      } else if (!_.isNaN(_.parseInt(tagGroup.tags[0].name))) {
+        tagGroup.tags = _.sortBy(tagGroup.tags, (tag) => _.parseInt(tag.name)) // Integer order
       } else {
-        tagGroup.tags = _.sortBy(tagGroup.tags, (tag) => _.parseInt(tag.name))
+        tagGroup.tags = _.sortBy(tagGroup.tags, 'name') // By string
       }
       return tagGroup
     })

@@ -59,7 +59,7 @@ class APISimulation {
         // Get level id
         level.id = parseInt(_.last(levelElement.id.split('-')))
         // Get score
-        level.score = parseInt(levelElement.querySelector('.scorevalue').innerText)
+        level.score = parseFloat(levelElement.querySelector('.scorevalue').innerText)
         // Get descriptor
         level.definition = levelElement.querySelector('.definition').innerText
         // Get defintion format
