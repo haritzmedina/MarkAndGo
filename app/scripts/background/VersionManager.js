@@ -91,6 +91,20 @@ VersionManager.messages = [
         chrome.tabs.create({url: 'https://github.com/haritzmedina/MarkAndGo/releases/tag/v0.1.5'})
       }
     }
+  }, {
+    version: '0.1.6',
+    notification: {
+      type: 'basic',
+      title: 'Mark&Go is updated to the version v0.1.6',
+      message: 'Mark&Go is updated to the new version v0.1.6. Would you like to know which ones are the new features and changes?',
+      iconUrl: chrome.extension.getURL('images/icon-512.png'),
+      buttons: [{title: 'Yes'}]
+    },
+    handler: (notificationId, buttonIndex) => {
+      if (buttonIndex === 0) {
+        chrome.tabs.create({url: 'https://github.com/haritzmedina/MarkAndGo/releases/tag/v0.1.6'})
+      }
+    }
   }
 ]
 
