@@ -79,7 +79,15 @@ class MoodleDownloadManager {
               let autoOpen = result.activated // TODO Change
               if (autoOpen) {
                 let localUrl = this.files[downloadItem.id]['localPath'] + '#autoOpen:true'
-                chrome.tabs.create({url: localUrl})
+                // Check if permission to access files is enabled, otherwise open a new tab with the message.
+                chrome.extension.isAllowedFileSchemeAccess((isAllowedAccess) => {
+                  if (isAllowedAccess === false) {
+                    chrome.tabs.create({ url: chrome.runtime.getURL('pages/filePermission.html') })
+                  } else {
+                    // Open the file automatically
+                    chrome.tabs.create({url: localUrl})
+                  }
+                })
               }
             }
           })
