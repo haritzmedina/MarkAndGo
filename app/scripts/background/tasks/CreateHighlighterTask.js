@@ -9,6 +9,7 @@ class CreateHighlighterTask extends Task {
   constructor (config) {
     super()
     this.config = config
+    this.currentPromisesList = []
   }
 
   init (callback) {
@@ -21,18 +22,22 @@ class CreateHighlighterTask extends Task {
       let groupName = siteUrl.host + courseId + student.id
       // We create a hash using the course ID and the student ID to anonymize the Hypothes.is group
       let hashedGroupName = 'MG' + CryptoUtils.hash(groupName).substring(0, 23)
-      promisesData.push({rubric, groupName: hashedGroupName})
+      promisesData.push({rubric, groupName: hashedGroupName, id: i})
     }
+
+    this.currentPromisesStatus = []
 
     let runPromiseToGenerateHypothesisGroup = (d) => {
       return new Promise((resolve, reject) => {
         this.generateHypothesisGroup({
           rubric: d.rubric,
           groupName: d.groupName,
+          id: d.id,
           callback: (err, result) => {
             if (err) {
               reject(err)
             } else {
+              this.currentPromisesStatus[d.id] = true
               if (result && result.nothingDone) {
                 resolve()
               } else {
@@ -45,7 +50,9 @@ class CreateHighlighterTask extends Task {
 
     let promiseChain = promisesData.reduce(
       (chain, d) =>
-        chain.then(() => runPromiseToGenerateHypothesisGroup(d)), Promise.resolve()
+        chain.then(() => {
+          return runPromiseToGenerateHypothesisGroup(d)
+        }), Promise.resolve()
     )
 
     promiseChain.then(() => {
@@ -55,7 +62,8 @@ class CreateHighlighterTask extends Task {
     })
   }
 
-  generateHypothesisGroup ({rubric, groupName, callback}) {
+  generateHypothesisGroup ({rubric, groupName, id, callback}) {
+    this.currentPromisesStatus[id] = 'Checking if Hypothes.is group already exists'
     if (_.isFunction(callback)) {
       this.initHypothesisClient(() => {
         // Create hypothesis group
@@ -63,17 +71,22 @@ class CreateHighlighterTask extends Task {
           if (_.isFunction(callback)) {
             if (err) {
               console.error(err)
+              this.currentPromisesStatus[id] = 'An unexpected error occurred when retrieving your user profile. Please check connection with Hypothes.is'
               callback(err)
             } else {
+              this.currentPromisesStatus[id] = 'Checking if Hypothes.is is up to date'
               let group = _.find(userProfile.groups, (group) => {
                 return group.name === groupName
               })
               if (_.isEmpty(group)) {
+                this.currentPromisesStatus[id] = 'Creating new Hypothes.is group to store annotations'
                 this.createHypothesisGroup({name: groupName}, (err, group) => {
                   if (err) {
                     console.error('ErrorConfiguringHighlighter')
+                    this.currentPromisesStatus[id] = chrome.i18n.getMessage('ErrorConfiguringHighlighter') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')
                     callback(new Error(chrome.i18n.getMessage('ErrorConfiguringHighlighter') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')))
                   } else {
+                    this.currentPromisesStatus[id] = 'Creating rubric highlighter in Hypothes.is'
                     this.createHighlighterAnnotations({
                       rubric, group, userProfile
                     }, () => {
@@ -90,7 +103,9 @@ class CreateHighlighterTask extends Task {
                 }, (err, annotations) => {
                   if (err) {
                     callback(err)
+                    this.currentPromisesStatus[id] = chrome.i18n.getMessage('ErrorConfiguringHighlighter') + '<br/>' + chrome.i18n.getMessage('ContactAdministrator')
                   } else {
+                    this.currentPromisesStatus[id] = 'Updating rubric highlighter in Hypothes.is'
                     this.updateHighlighterAnnotations({
                       rubric, annotations, group, userProfile
                     }, () => {
@@ -236,6 +251,23 @@ class CreateHighlighterTask extends Task {
         }
       })
     })
+  }
+
+  getStatus () {
+    let numberTotal = this.config.activities.length
+    let finished = _.countBy(this.currentPromisesStatus, (promiseList) => {
+      return promiseList === true
+    }).true || 'unknown'
+    if (finished < numberTotal) {
+      let currentTaskName = _.last(this.currentPromisesStatus)
+      if (currentTaskName !== true) {
+        return currentTaskName + ' (' + finished + '/' + numberTotal + ')'
+      } else {
+        return 'Creating Hypothes.is group (' + finished + '/' + numberTotal + ')'
+      }
+    } else {
+      return 'Creating Hypothes.is group (' + finished + '/' + numberTotal + ')'
+    }
   }
 }
 

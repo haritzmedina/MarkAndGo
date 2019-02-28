@@ -40,7 +40,7 @@ class Alerts {
     }
   }
 
-  static infoAlert ({text = chrome.i18n.getMessage('expectedInfoMessageNotFound'), title = 'Info', callback}) {
+  static infoAlert ({text = chrome.i18n.getMessage('expectedInfoMessageNotFound'), title = 'Info', timerIntervalHandler, timerIntervalPeriodInSeconds = 0.1, callback}) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
       if (_.isFunction(callback)) {
@@ -48,10 +48,22 @@ class Alerts {
       }
     } else {
       let fire = () => {
+        let timerInterval
         swal.fire({
           type: Alerts.alertType.info,
           title: title,
-          html: text
+          html: text,
+          showConfirmButton: true,
+          onOpen: () => {
+            if (_.isFunction(timerIntervalHandler)) {
+              timerInterval = setInterval(() => {
+                timerIntervalHandler(swal)
+              }, timerIntervalPeriodInSeconds * 1000)
+            }
+          },
+          onClose: () => {
+            clearInterval(timerInterval)
+          }
         })
       }
       if (Alerts.isVisible()) {
@@ -141,7 +153,15 @@ class Alerts {
     }
   }
 
-  static loadingAlert ({text = 'If it takes too much time, please reload the page and try again.', position = 'top-end', title = 'Working on something, please be patient', confirmButton = false, timerIntervalHandler, callback}) {
+  static loadingAlert ({
+    text = 'If it takes too much time, please reload the page and try again.',
+    position = 'top-end',
+    title = 'Working on something, please be patient',
+    confirmButton = false,
+    timerIntervalHandler,
+    timerIntervalPeriodInSeconds = 0.1,
+    callback
+  }) {
     Alerts.tryToLoadSwal()
     if (_.isNull(swal)) {
       if (_.isFunction(callback)) {
@@ -160,7 +180,7 @@ class Alerts {
             if (_.isFunction(timerIntervalHandler)) {
               timerInterval = setInterval(() => {
                 timerIntervalHandler(swal)
-              }, 100)
+              }, timerIntervalPeriodInSeconds * 1000)
             }
           },
           onClose: () => {

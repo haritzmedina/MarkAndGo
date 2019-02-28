@@ -7,6 +7,7 @@ class TaskManager {
   constructor () {
     this.currentTasks = []
     this.currentTask = {}
+    this.currentTaskInstance = null
   }
 
   init () {
@@ -24,9 +25,16 @@ class TaskManager {
             this.addTasks(task)
             sendResponse({minutes: minutesPending})
           }
+        } else if (request.cmd === 'getCurrentTaskStatus') {
+          if (_.isObject(this.currentTaskInstance)) {
+            sendResponse({status: 'CreateHighlighterTask pending', statusMessage: this.currentTaskInstance.getStatus()})
+          } else {
+            sendResponse({status: 'Nothing pending'})
+          }
         }
       }
     })
+    // Restore previous activities
     this.restoreTasks(() => {
       console.log('Task manager initialized')
       // Start task management
@@ -94,7 +102,9 @@ class TaskManager {
         // Task is finished
         this.notifyTask(this.currentTask.notification)
         this.removeFinishedTask()
+        this.currentTaskInstance = null
       })
+      this.currentTaskInstance = task
     }
   }
 

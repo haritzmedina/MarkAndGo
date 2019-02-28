@@ -90,11 +90,24 @@ class MoodleContentScript {
                           })
                         } else {
                           let minutes = result.minutes
+                          let notFirstTime = false
                           Alerts.infoAlert({
                             title: 'Configuration started',
-                            text: 'We are configuring everything to start marking students exams using Mark&Go.' +
+                            text: 'We are configuring the assignment to mark using Mark&Go.' +
                               `This can take around <b>${minutes} minute(s)</b>.` +
-                              'You can close this window, we will notify you when it is finished.'
+                              'You can close this window, we will notify you when it is finished.<br/>Current status: <span></span>',
+                            timerIntervalHandler: (swal) => {
+                              chrome.runtime.sendMessage({scope: 'task', cmd: 'getCurrentTaskStatus'}, (result) => {
+                                if (result.status && result.status === 'Nothing pending' && notFirstTime) {
+                                  Alerts.closeAlert()
+                                  Alerts.infoAlert({text: 'The assignment is correctly configured', title: 'Configuration finished'})
+                                } else if (result.status && result.status === 'CreateHighlighterTask pending') {
+                                  notFirstTime = true
+                                  swal.getContent().querySelector('span').textContent = result.statusMessage
+                                }
+                              })
+                            },
+                            timerIntervalPeriodInSeconds: 2
                           })
                           // Show message
                           callback(null)
