@@ -239,6 +239,16 @@ class TextAnnotator extends ContentAnnotator {
       data.document.link = data.document.link || []
       data.document.link.push({href: 'doi:' + doi})
     }
+    if (!_.isEmpty(window.abwa.contentTypeManager.documentFingerprint)) {
+      data.document = {
+        documentFingerprint: window.abwa.contentTypeManager.documentFingerprint,
+        link: [{
+          href: 'urn:x-txt:' + window.abwa.contentTypeManager.documentFingerprint
+        }, {
+          href: window.abwa.contentTypeManager.getDocumentURIToSaveInHypothesis()
+        }]
+      }
+    }
     // If citation pdf is found
     if (!_.isEmpty(window.abwa.contentTypeManager.citationPdf)) {
       let pdfUrl = window.abwa.contentTypeManager.doi

@@ -3,6 +3,7 @@ const Events = require('./Events')
 const URLUtils = require('../utils/URLUtils')
 const LanguageUtils = require('../utils/LanguageUtils')
 const Alerts = require('../utils/Alerts')
+const CryptoUtils = require('../utils/CryptoUtils')
 
 const URL_CHANGE_INTERVAL_IN_SECONDS = 1
 
@@ -88,6 +89,8 @@ class ContentTypeManager {
               } else {
                 this.fileMetadata = fileMetadata.file
                 this.documentURL = fileMetadata.file.url
+                // Calculate fingerprint for plain text files
+                this.tryToLoadPlainTextFingerprint()
                 this.getContextAndItemIdInLocalFile()
               }
               if (_.isFunction(callback)) {
@@ -180,6 +183,8 @@ class ContentTypeManager {
   getDocumentURIToSearchInHypothesis () {
     if (this.documentType === ContentTypeManager.documentTypes.pdf) {
       return 'urn:x-pdf:' + this.pdfFingerprint
+    } else if (this.documentFingerprint) {
+      return 'urn:x-txt:' + this.documentFingerprint
     } else {
       return this.documentURL
     }
@@ -199,6 +204,14 @@ class ContentTypeManager {
         LanguageUtils.dispatchCustomEvent(Events.updatedDocumentURL, {url: this.documentURL})
       }
     }, URL_CHANGE_INTERVAL_IN_SECONDS * 1000)
+  }
+
+  tryToLoadPlainTextFingerprint () {
+    let fileTextContentElement = document.querySelector('body > pre')
+    if (fileTextContentElement) {
+      let fileTextContent = fileTextContentElement.innerText
+      this.documentFingerprint = CryptoUtils.hash(fileTextContent.innerText)
+    }
   }
 }
 
