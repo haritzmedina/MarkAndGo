@@ -300,13 +300,20 @@ class AssessmentManager {
           window.abwa.contentAnnotator.updateAllAnnotations()
         })
         // Update moodle
-        this.updateMoodle(() => {
-          Alerts.temporalAlert({
-            text: 'The mark is updated in moodle',
-            title: 'Correctly marked',
-            type: Alerts.alertType.success,
-            toast: true
-          })
+        this.updateMoodle((err, result) => {
+          if (err) {
+            Alerts.errorAlert({
+              text: 'Unable to push marks to moodle, please make sure that you are logged in Moodle and try it again.',
+              title: 'Unable to update marks in moodle'
+            })
+          } else {
+            Alerts.temporalAlert({
+              text: 'The mark is updated in moodle',
+              title: 'Correctly marked',
+              type: Alerts.alertType.success,
+              toast: true
+            })
+          }
         })
       }
       this.marks[criteria.name].level = level

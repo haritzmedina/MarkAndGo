@@ -14,7 +14,7 @@ class MoodleBackgroundManager {
             let endpoint = request.data.endpoint
             this.getTokens(endpoint, (err, tokens) => {
               if (err) {
-
+                sendResponse({err: err})
               } else {
                 this.testTokens({endpoint, tokens}, (err, tokens) => {
                   if (err) {
