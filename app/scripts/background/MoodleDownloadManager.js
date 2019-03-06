@@ -76,8 +76,15 @@ class MoodleDownloadManager {
         // If mag is set in the URL, open a new tab with the document
         if (this.files[downloadItem.id]['mag'] && this.files[downloadItem.id]['studentId']) {
           let localUrl = this.files[downloadItem.id]['localPath'] + '#mag:' + this.files[downloadItem.id]['mag'] + '&studentId:' + this.files[downloadItem.id]['studentId']
-          chrome.tabs.create({url: localUrl}, (tab) => {
-            this.files[downloadItem.id]['mag'] = null
+          chrome.extension.isAllowedFileSchemeAccess((isAllowedAccess) => {
+            if (isAllowedAccess === false) {
+              chrome.tabs.create({ url: chrome.runtime.getURL('pages/filePermission.html') })
+            } else {
+              // Open the file automatically
+              chrome.tabs.create({url: localUrl}, () => {
+                this.files[downloadItem.id]['mag'] = null
+              })
+            }
           })
         } else {
           // Check if auto-open option is activated
