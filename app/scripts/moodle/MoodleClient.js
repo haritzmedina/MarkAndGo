@@ -45,6 +45,37 @@ class MoodleClient {
     })
   }
 
+  getCmidInfo (cmid, callback) {
+    let data = {cmid: cmid}
+    let settings = {
+      'async': true,
+      'crossDomain': true,
+      'url': this.endpoint + 'webservice/rest/server.php?',
+      'method': 'POST',
+      'params': {
+        'wstoken': this.token,
+        'wsfunction': 'core_course_get_course_module',
+        'moodlewsrestformat': 'json'
+      },
+      'headers': {
+        'cache-control': 'no-cache',
+        'Content-Type': 'multipart/form-data'
+      },
+      'processData': false,
+      'contentType': false,
+      'mimeType': 'multipart/form-data',
+      'data': data,
+      'transformRequest': [(data) => {
+        return jsonFormData(data)
+      }]
+    }
+    axios(settings).then((response) => {
+      if (_.isFunction(callback)) {
+        callback(null, response.data)
+      }
+    })
+  }
+
   updateStudentGradeWithRubric (data, callback) {
     let settings = {
       'async': true,
@@ -53,7 +84,6 @@ class MoodleClient {
       'method': 'POST',
       'headers': {
         'Cache-Control': 'no-cache',
-        'Postman-Token': 'c114b8ee-4225-4947-b8ac-5ab48e7b657a',
         'Content-Type': 'multipart/form-data'
       },
       'params': {

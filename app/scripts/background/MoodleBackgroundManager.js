@@ -14,7 +14,7 @@ class MoodleBackgroundManager {
             let endpoint = request.data.endpoint
             this.getTokens(endpoint, (err, tokens) => {
               if (err) {
-
+                sendResponse({err: err})
               } else {
                 this.testTokens({endpoint, tokens}, (err, tokens) => {
                   if (err) {
@@ -50,7 +50,7 @@ class MoodleBackgroundManager {
             }
           })
         } else if (request.cmd === 'saveGrantedPermissionMoodle') {
-          ChromeStorage.setData('moodlePermission', {saved: true}, ChromeStorage.sync, (err, consent) => {
+          ChromeStorage.setData('moodlePermission', {saved: true}, ChromeStorage.sync, (err) => {
             if (err) {
               sendResponse({err: err})
             } else {
@@ -63,6 +63,38 @@ class MoodleBackgroundManager {
               sendResponse({err: err})
             } else {
               sendResponse({consent: consent})
+            }
+          })
+        } else if (request.cmd === 'isApiSimulationActivated') {
+          ChromeStorage.getData('moodleApiSimulation', ChromeStorage.sync, (err, isActivated) => {
+            if (err) {
+              sendResponse({activated: false})
+            } else {
+              sendResponse(isActivated || {activated: false})
+            }
+          })
+        } else if (request.cmd === 'setApiSimulationActivation') {
+          ChromeStorage.setData('moodleApiSimulation', {activated: request.data.isActivated}, ChromeStorage.sync, (err, response) => {
+            if (err) {
+              sendResponse({err: err, saved: false})
+            } else {
+              sendResponse({saved: true})
+            }
+          })
+        } else if (request.cmd === 'isAutoOpenFilesActivated') {
+          ChromeStorage.getData('autoOpenFiles', ChromeStorage.sync, (err, isActivated) => {
+            if (err) {
+              sendResponse({activated: false})
+            } else {
+              sendResponse(isActivated || {activated: false})
+            }
+          })
+        } else if (request.cmd === 'setAutoOpenFiles') {
+          ChromeStorage.setData('autoOpenFiles', {activated: request.data.isActivated}, ChromeStorage.sync, (err, response) => {
+            if (err) {
+              sendResponse({err: err, saved: false})
+            } else {
+              sendResponse({saved: true})
             }
           })
         }

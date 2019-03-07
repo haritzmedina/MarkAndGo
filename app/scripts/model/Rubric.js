@@ -38,9 +38,26 @@ class Rubric extends AnnotationGuide {
       text: jsYaml.dump({
         moodleEndpoint: this.moodleEndpoint,
         assignmentId: this.assignmentId,
-        courseId: this.courseId
+        courseId: this.courseId,
+        assignmentName: this.name
       }),
       uri: this.hypothesisGroup.links ? this.hypothesisGroup.links.html : this.hypothesisGroup.url // Compatibility with both group representations getGroups and userProfile
+    }
+  }
+
+  getUrlToStudentAssignmentForTeacher (studentId) {
+    if (studentId && this.moodleEndpoint && this.cmid) {
+      return this.moodleEndpoint + 'mod/assign/view.php?id=' + this.cmid + '&rownum=0&action=grader&userid=' + studentId
+    } else {
+      return null
+    }
+  }
+
+  getUrlToStudentAssignmentForStudent (studentId) {
+    if (studentId && this.moodleEndpoint && this.cmid) {
+      return this.moodleEndpoint + 'mod/assign/view.php?id=' + this.cmid
+    } else {
+      return null
     }
   }
 
@@ -96,7 +113,7 @@ class Rubric extends AnnotationGuide {
     if (_.isString(cmidTag)) {
       config.cmid = cmidTag.replace('exam:cmid:', '')
     }
-    config.assignmentName = window.abwa.groupSelector.currentGroup.name
+    config.assignmentName = config.assignmentName || window.abwa.groupSelector.currentGroup.name
     config.hypothesisGroup = window.abwa.groupSelector.currentGroup
     return new Rubric(config)
   }

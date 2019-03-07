@@ -11,12 +11,29 @@ class Options {
       document.querySelector('#moodleEndpoint').value = endpoint.endpoint
     })
 
+    chrome.runtime.sendMessage({scope: 'moodle', cmd: 'isApiSimulationActivated'}, (isActivated) => {
+      document.querySelector('#apiSimulationCheckbox').checked = isActivated.activated
+    })
+
+    chrome.runtime.sendMessage({scope: 'moodle', cmd: 'isAutoOpenFilesActivated'}, (isActivated) => {
+      document.querySelector('#autoOpenCheckbox').checked = isActivated.activated
+    })
+
+    // Add event listeners to on change options
     document.querySelector('#fileFormats').addEventListener('change', () => {
       this.updateFileFormats()
     })
 
     document.querySelector('#moodleEndpoint').addEventListener('change', () => {
       this.updateMoodleEndpoint()
+    })
+
+    document.querySelector('#apiSimulationCheckbox').addEventListener('change', () => {
+      this.updateApiSimulationCheckbox()
+    })
+
+    document.querySelector('#autoOpenCheckbox').addEventListener('change', () => {
+      this.updateAutoOpenCheckbox()
     })
 
     window.addEventListener('beforeunload', () => {
@@ -36,6 +53,28 @@ class Options {
     })
   }
 
+  updateApiSimulationCheckbox () {
+    let isChecked = document.querySelector('#apiSimulationCheckbox').checked
+    chrome.runtime.sendMessage({
+      scope: 'moodle',
+      cmd: 'setApiSimulationActivation',
+      data: {isActivated: isChecked}
+    }, (response) => {
+      console.debug('Api simulation is updated to: ' + response.activated)
+    })
+  }
+
+  updateAutoOpenCheckbox () {
+    let isChecked = document.querySelector('#autoOpenCheckbox').checked
+    chrome.runtime.sendMessage({
+      scope: 'moodle',
+      cmd: 'setAutoOpenFiles',
+      data: {isActivated: isChecked}
+    }, (response) => {
+      console.debug('Api simulation is updated to: ' + response.activated)
+    })
+  }
+
   updateMoodleEndpoint () {
     let value = document.querySelector('#moodleEndpoint').value
     let isValidUrl = URLUtils.isUrl(value)
@@ -50,7 +89,7 @@ class Options {
         scope: 'moodle',
         cmd: 'setMoodleCustomEndpoint',
         data: {endpoint: value}
-      }, (endpoint) => {
+      }, ({endpoint}) => {
         console.debug('Endpoint updated to ' + endpoint.endpoint)
       })
     } else {

@@ -14,7 +14,7 @@ class RubricManager {
       order: 'desc'
     }, (err, annotations) => {
       if (err) {
-        Alerts.warningAlert({text: 'Unable to retrieve document annotations'}) // TODO i18n
+        Alerts.warningAlert({text: 'Unable to retrieve annotations for the highlighter'}) // TODO i18n
       } else {
         let cmid = window.abwa.contentTypeManager.fileMetadata.cmid
         annotations = _.filter(annotations, (annotation) => {

@@ -4,12 +4,13 @@ const ModeManager = require('./ModeManager')
 const Sidebar = require('./Sidebar')
 const TagManager = require('./TagManager')
 const GroupSelector = require('./GroupSelector')
-const ConfigDecisionHelper = require('./ConfigDecisionHelper')
+const Config = require('../Config')
 const AnnotationBasedInitializer = require('./AnnotationBasedInitializer')
 const UserFilter = require('./UserFilter')
 const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
 const RolesManager = require('./RolesManager')
 const RubricManager = require('./RubricManager')
+const MarkAndGoToolset = require('../specific/exams/MarkAndGoToolset')
 
 class ContentScriptManager {
   constructor () {
@@ -60,36 +61,30 @@ class ContentScriptManager {
   }
 
   reloadContentByGroup (callback) {
-    ConfigDecisionHelper.decideWhichConfigApplyToTheGroup(window.abwa.groupSelector.currentGroup, (config) => {
-      // If not configuration is found
-      if (_.isEmpty(config)) {
-        // TODO Inform user no defined configuration found
-        console.debug('No supported configuration found for this group')
-        this.destroyRolesManager()
-        this.destroyTagsManager()
-        this.destroyUserFilter()
-        this.destroyContentAnnotator()
-        this.destroySpecificContentManager()
-      } else {
-        console.debug('Loaded supported configuration %s', config.namespace)
-        this.reloadRolesManager(config, () => {
-          this.reloadRubricManager(config, () => {
-            // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
-            this.reloadTagsManager(config, () => {
-              this.reloadContentAnnotator(config, () => {
-                if (config.userFilter) {
-                  this.reloadUserFilter(config, () => {
-                    this.reloadSpecificContentManager(config)
-                  })
-                } else {
-                  this.reloadSpecificContentManager(config)
-                }
+    let config = Config.exams // Configuration for this tool is exams
+    this.reloadRolesManager(config, () => {
+      this.reloadRubricManager(config, () => {
+        // Initialize sidebar toolset
+        this.initToolset()
+        // Tags manager should go before content annotator, depending on the tags manager, the content annotator can change
+        this.reloadTagsManager(config, () => {
+          this.reloadContentAnnotator(config, () => {
+            if (config.userFilter) {
+              this.reloadUserFilter(config, () => {
+                this.reloadSpecificContentManager(config)
               })
-            })
+            } else {
+              this.reloadSpecificContentManager(config)
+            }
           })
         })
-      }
+      })
     })
+  }
+
+  initToolset () {
+    window.abwa.toolset = new MarkAndGoToolset()
+    window.abwa.toolset.init()
   }
 
   reloadRubricManager (config, callback) {

@@ -1,5 +1,6 @@
 const _ = require('lodash')
 const URLUtils = require('../utils/URLUtils')
+const Alerts = require('../utils/Alerts')
 
 const Config = require('../Config')
 
@@ -12,16 +13,27 @@ class AnnotationBasedInitializer {
     // Check if annotation is in hash params
     let annotationId = AnnotationBasedInitializer.getAnnotationHashParam()
     if (annotationId) {
-      window.abwa.hypothesisClientManager.hypothesisClient.fetchAnnotation(annotationId, (err, annotation) => {
-        if (err) {
-          console.error(err)
-        } else {
-          this.initAnnotation = annotation
-        }
-        if (_.isFunction(callback)) {
-          callback(annotation)
-        }
-      })
+      if (window.abwa.hypothesisClientManager.isLoggedIn() === false) {
+        window.abwa.hypothesisClientManager.logInHypothesis((err, token) => {
+          if (err) {
+            Alerts.errorAlert({title: 'Log in hypothes.is is required', text: 'To use Mark&Go it is necessary to log in Hypothes.is.'})
+          } else {
+            // Reload web page
+            document.location.reload()
+          }
+        })
+      } else {
+        window.abwa.hypothesisClientManager.hypothesisClient.fetchAnnotation(annotationId, (err, annotation) => {
+          if (err) {
+            // Alerts.errorAlert({title: 'Unable to retrieve ',text:})
+          } else {
+            this.initAnnotation = annotation
+          }
+          if (_.isFunction(callback)) {
+            callback(annotation)
+          }
+        })
+      }
     } else {
       if (_.isFunction(callback)) {
         callback(null)
@@ -35,6 +47,16 @@ class AnnotationBasedInitializer {
     let params = URLUtils.extractHashParamsFromUrl(decodedUri)
     if (!_.isEmpty(params) && _.has(params, Config.exams.urlParamName)) {
       return params[Config.exams.urlParamName]
+    } else {
+      return false
+    }
+  }
+
+  static isAutoOpenHashParam () {
+    let decodedUri = decodeURIComponent(window.location.href)
+    let params = URLUtils.extractHashParamsFromUrl(decodedUri)
+    if (!_.isEmpty(params) && _.has(params, 'autoOpen')) {
+      return params['autoOpen']
     } else {
       return false
     }

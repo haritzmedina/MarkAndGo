@@ -1,1 +1,12 @@
 @import '../../node_modules/bootstrap/scss/bootstrap';
+
+[aria-hidden="true"] {
+  display: none;
+}
+
+.card-header {
+  margin-top: 0;
+}
+.card {
+  margin-top: 10px;
+}

@@ -1,6 +1,7 @@
 const _ = require('lodash')
 
 const HypothesisClient = require('hypothesis-api-client')
+const Alerts = require('../utils/Alerts')
 
 const reloadIntervalInSeconds = 10 // Reload the hypothesis client every 10 seconds
 
@@ -85,15 +86,12 @@ class HypothesisClientManager {
   }
 
   askUserToLogInHypothesis (callback) {
-    let swal = require('sweetalert2')
-    // Ask question
-    swal({
+    // Ask for login
+    Alerts.confirmAlert({
       title: 'Hypothes.is login required', // TODO i18n
       text: chrome.i18n.getMessage('HypothesisLoginRequired'),
-      type: 'info',
-      showCancelButton: true
-    }).then((result) => {
-      if (result.value) {
+      type: Alerts.alertType.info,
+      callback: () => {
         // Prompt hypothesis login form
         chrome.runtime.sendMessage({scope: 'hypothesis', cmd: 'userLoginForm'}, (result) => {
           if (result.error) {
@@ -108,8 +106,6 @@ class HypothesisClientManager {
             })
           }
         })
-      } else {
-        callback(new Error('User don\'t want to log in hypothes.is'))
       }
     })
   }

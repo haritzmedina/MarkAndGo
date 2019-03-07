@@ -4,10 +4,10 @@ class URLUtils {
   /**
    * Given a url with format https://domain.org#elem:abc&elem:bcd it returns you the object {elem: 'abc', elem: 'bcd'}
    * @param url
+   * @param separator
    * @returns {{}}
    */
-  static extractHashParamsFromUrl (url, separator) {
-    separator = separator || ':'
+  static extractHashParamsFromUrl (url, separator = ':') {
     let splittedUrl = url.split('#')
     let result = null
     if (splittedUrl.length > 1) {

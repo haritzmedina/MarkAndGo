@@ -27,6 +27,9 @@ class TagManager {
     console.debug('Initializing TagManager')
     this.initTagsStructure(() => {
       this.initEventHandlers(() => {
+        // Show tags container for current mode
+        this.showTagsContainerForMode(window.abwa.modeManager.mode)
+        // Initialize all tags in each of the sidebar modes
         this.initAllTags(() => {
           console.debug('Initialized TagManager')
           if (_.isFunction(callback)) {
@@ -169,12 +172,15 @@ class TagManager {
         }
       }
     }
+    // Reorder tag groups individual elements (levels in rubric)
     tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => {
       // TODO Check all elements, not only tags[0]
-      if (_.isNaN(_.parseInt(tagGroup.tags[0].name))) {
-        tagGroup.tags = _.sortBy(tagGroup.tags, 'name')
+      if (_.has(tagGroup.tags[0], 'options.levelId')) {
+        tagGroup.tags = _.sortBy(tagGroup.tags, 'options.levelId') // By level id if it is set
+      } else if (!_.isNaN(_.parseInt(tagGroup.tags[0].name))) {
+        tagGroup.tags = _.sortBy(tagGroup.tags, (tag) => _.parseInt(tag.name)) // Integer order
       } else {
-        tagGroup.tags = _.sortBy(tagGroup.tags, (tag) => _.parseInt(tag.name))
+        tagGroup.tags = _.sortBy(tagGroup.tags, 'name') // By string
       }
       return tagGroup
     })
@@ -182,7 +188,9 @@ class TagManager {
     tagGroupsAnnotations = _.map(tagGroupsAnnotations, (tagGroup) => {
       if (tagGroup.tags.length > 0) {
         tagGroup.tags = _.map(tagGroup.tags, (tag, index) => {
-          let color = ColorUtils.setAlphaToColor(colors[tagGroup.config.name], 0.2 + index / tagGroup.tags.length * 0.8)
+          // Calculate the color maximum value (if dark color, the maximum will be 0.6, for light colors 0.9
+          let max = ColorUtils.isDark(colors[tagGroup.config.name]) ? 0.6 : 0.8
+          let color = ColorUtils.setAlphaToColor(colors[tagGroup.config.name], 0.2 + index / tagGroup.tags.length * max)
           tag.options.color = color
           tag.color = color
           return tag
@@ -236,14 +244,15 @@ class TagManager {
         name: tagGroup.config.name,
         color: ColorUtils.setAlphaToColor(tagGroup.config.color, 0.5),
         handler: (event) => {
-          // Check if it is already marked to get current mark
-          let currentMark = this.getCurrentMarkForCriteria(tagGroup.config.name)
+          // Tags for current button
           let tags = [
             this.model.namespace + ':' + this.model.config.grouped.relation + ':' + tagGroup.config.name,
             'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
           ]
-          if (!_.isUndefined(currentMark) && !_.isNull(currentMark)) {
-            tags.push(this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + currentMark)
+          // Check if it is already marked to get current mark
+          let mark = window.abwa.specific.assessmentManager.marks[tagGroup.config.name]
+          if (!_.isNull(mark.level)) {
+            tags.push(this.model.namespace + ':' + this.model.config.grouped.subgroup + ':' + mark.level.name)
           }
           LanguageUtils.dispatchCustomEvent(Events.annotate, {tags: tags})
         }})
@@ -278,63 +287,11 @@ class TagManager {
         color: tagGroup.config.color,
         elements: tagGroup.tags,
         groupHandler: (event) => {
-          // TODO Go to annotation with that group tag
-          window.abwa.contentAnnotator.goToFirstAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
+          // Go to annotation with that group tag
+          window.abwa.contentAnnotator.goToAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
         },
         buttonHandler: (event) => {
-          // Update all annotations for current document/tag
-          let oldTagList = ['exam:isCriteriaOf:' + tagGroup.config.name]
-          let newTagList = [
-            'exam:isCriteriaOf:' + tagGroup.config.name,
-            'exam:mark:' + event.target.dataset.mark,
-            'exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid
-          ]
-          window.abwa.contentAnnotator.updateTagsForAllAnnotationsWithTag(
-            oldTagList, newTagList,
-            (err, annotations) => {
-              if (err) {
-
-              } else {
-                //
-                console.debug('All annotations with criteria ' + tagGroup.config.name + ' has mark ' + event.target.dataset.mark)
-                // Reload all annotations
-                window.abwa.contentAnnotator.updateAllAnnotations((err, annotations) => {
-                  if (err) {
-                    console.error('Unexpected error when updating annotations')
-                  } else {
-                    window.abwa.contentAnnotator.redrawAnnotations()
-                  }
-                })
-                // If no annotations are found, create one for in page level with selected tags
-                if (annotations.length === 0) {
-                  Alerts.confirmAlert({
-                    title: chrome.i18n.getMessage('noEvidencesFoundForMarkingTitle'),
-                    text: chrome.i18n.getMessage('noEvidencesFoundForMarkingText', event.target.dataset.mark),
-                    alertType: Alerts.alertType.warning,
-                    callback: (err) => {
-                      if (err) {
-                        // Manage error
-                        window.alert('Unable to create alert for: noEvidencesFoundForMarking. Reload the page, and if the error continues please contact administrator.')
-                      } else {
-                        const TextAnnotator = require('./contentAnnotators/TextAnnotator')
-                        window.abwa.hypothesisClientManager.hypothesisClient.createNewAnnotation(TextAnnotator.constructAnnotation(null, newTagList), (err, annotation) => {
-                          if (err) {
-                            Alerts.errorAlert({text: err.message})
-                          } else {
-                            annotations.push(annotation)
-                            // Send event of mark
-                            LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
-                          }
-                        })
-                      }
-                    }
-                  })
-                } else {
-                  // Send event of mark
-                  LanguageUtils.dispatchCustomEvent(Events.mark, {criteria: tagGroup.config.name, mark: event.target.dataset.mark, annotations: annotations})
-                }
-              }
-            })
+          LanguageUtils.dispatchCustomEvent(Events.mark, {criteriaName: tagGroup.config.name, levelName: event.target.dataset.mark})
         }
       })
       this.tagsContainer.marking.append(panel)
@@ -363,6 +320,8 @@ class TagManager {
         return tagGroup.config.name === annotation.tags[0].replace('exam:isCriteriaOf:', '')
       })
     }))
+    // Remove undefined values
+    tagGroups = _.compact(tagGroups)
     // Remove tagGroups elements which are not the mark for the current student
     _.forEach(tagGroups, (tagGroup) => {
       _.remove(tagGroup.tags, (tag) => {
@@ -397,14 +356,14 @@ class TagManager {
         color: tagGroup.config.color,
         elements: tagGroup.tags,
         buttonHandler: (event) => {
-          window.abwa.contentAnnotator.goToFirstAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
+          window.abwa.contentAnnotator.goToAnnotationOfTag('exam:isCriteriaOf:' + tagGroup.config.name)
         }
       })
       this.tagsContainer.viewing.append(panel)
     }
   }
 
-  createButton ({name, color = 'white', description, handler}) {
+  createButton ({name, color = 'white', description, handler, role}) {
     let tagButtonTemplate = document.querySelector('#tagButtonTemplate')
     let tagButton = $(tagButtonTemplate.content.firstElementChild).clone().get(0)
     tagButton.innerText = name
@@ -414,12 +373,22 @@ class TagManager {
       tagButton.title = name
     }
     tagButton.dataset.mark = name
-    tagButton.setAttribute('role', 'annotation')
+    tagButton.setAttribute('role', role || 'annotation')
     if (color) {
       $(tagButton).css('background-color', color)
+      tagButton.dataset.baseColor = color
     }
     // Set handler for button
     tagButton.addEventListener('click', handler)
+    // Tag button background color change
+    // TODO It should be better to set it as a CSS property, but currently there is not an option for that
+    tagButton.addEventListener('mouseenter', () => {
+      let darkerAlpha = ColorUtils.colorFromString(tagButton.dataset.baseColor).valpha + 0.2
+      tagButton.style.backgroundColor = ColorUtils.setAlphaToColor(ColorUtils.colorFromString(tagButton.dataset.baseColor), darkerAlpha)
+    })
+    tagButton.addEventListener('mouseleave', () => {
+      tagButton.style.backgroundColor = tagButton.dataset.baseColor
+    })
     return tagButton
   }
 
@@ -427,10 +396,12 @@ class TagManager {
     // Create the container
     let tagGroupTemplate = document.querySelector('#tagGroupTemplate')
     let tagGroup = $(tagGroupTemplate.content.firstElementChild).clone().get(0)
+    tagGroup.dataset.criteria = name
     let tagButtonContainer = $(tagGroup).find('.tagButtonContainer')
     let groupNameSpan = tagGroup.querySelector('.groupName')
     groupNameSpan.innerText = name
     groupNameSpan.title = name
+    groupNameSpan.dataset.clickable = 'true'
     // Create event handler for tag group
     groupNameSpan.addEventListener('click', groupHandler)
     // Create buttons and add to the container
@@ -441,7 +412,8 @@ class TagManager {
           name: element.name,
           color: element.getColor(),
           description: (element.options.description || null),
-          handler: buttonHandler
+          handler: buttonHandler,
+          role: 'marking'
         })
         tagButtonContainer.append(button)
       }
@@ -463,11 +435,15 @@ class TagManager {
   }
 
   modeChangeHandler (event) {
-    if (event.detail.mode === ModeManager.modes.evidencing) {
+    this.showTagsContainerForMode(event.detail.mode)
+  }
+
+  showTagsContainerForMode (mode) {
+    if (mode === ModeManager.modes.evidencing) {
       this.showEvidencingTagsContainer()
-    } else if (event.detail.mode === ModeManager.modes.mark) {
+    } else if (mode === ModeManager.modes.mark) {
       this.showMarkingTagsContainer()
-    } else if (event.detail.mode === ModeManager.modes.view) {
+    } else if (mode === ModeManager.modes.view) {
       this.showViewingTagsContainer()
     }
   }
@@ -532,7 +508,7 @@ class TagManager {
 
   findAnnotationTagInstance (annotation) {
     let groupTag = this.getGroupFromAnnotation(annotation)
-    if (annotation.tags.length > 1) {
+    if (_.isObject(groupTag)) {
       // Check if has code defined, because other tags can be presented (like exam:studentId:X)
       if (this.hasCodeAnnotation(annotation)) {
         return this.getCodeFromAnnotation(annotation, groupTag)
@@ -548,19 +524,29 @@ class TagManager {
     let tags = annotation.tags
     let criteriaTag = _.find(tags, (tag) => {
       return tag.includes('exam:isCriteriaOf:')
-    }).replace('exam:isCriteriaOf:')
-    return _.find(window.abwa.tagManager.currentTags, (tagGroupInstance) => {
-      return criteriaTag.includes(tagGroupInstance.config.name)
     })
+    if (criteriaTag) {
+      let criteriaName = criteriaTag.replace('exam:isCriteriaOf:', '')
+      return _.find(window.abwa.tagManager.currentTags, (tagGroupInstance) => {
+        return criteriaName === tagGroupInstance.config.name
+      }) || null
+    } else {
+      return null
+    }
   }
 
   getCodeFromAnnotation (annotation, groupTag) {
     let markTag = _.find(annotation.tags, (tag) => {
       return tag.includes('exam:mark:')
-    }).replace('exam:mark:')
-    return _.find(groupTag.tags, (tagInstance) => {
-      return markTag.includes(tagInstance.name)
     })
+    if (markTag) {
+      let markName = markTag.replace('exam:mark:', '')
+      return _.find(groupTag.tags, (tagInstance) => {
+        return markName === tagInstance.name
+      }) || null
+    } else {
+      return null
+    }
   }
 
   hasCodeAnnotation (annotation) {

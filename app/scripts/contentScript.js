@@ -1,9 +1,9 @@
+require('babel-polyfill') // To allow async await functions
+
 const ContentScriptManager = require('./contentScript/ContentScriptManager')
 const AnnotationBasedInitializer = require('./contentScript/AnnotationBasedInitializer')
 
 const _ = require('lodash')
-
-console.log('aa')
 
 console.debug('Loaded abwa content script')
 if (_.isEmpty(window.abwa)) {
@@ -27,10 +27,16 @@ if (_.isEmpty(window.abwa)) {
   })
   // Check if uri contains annotation to initialize
   let annotation = AnnotationBasedInitializer.getAnnotationHashParam()
+  let autoOpen = AnnotationBasedInitializer.isAutoOpenHashParam()
   if (annotation) {
     // If extension is not activated, activate
     chrome.runtime.sendMessage({scope: 'extension', cmd: 'activatePopup'}, () => {
       console.debug('Activated popup by annotation')
+    })
+  } else if (autoOpen) {
+    // If extension is not activated, activate
+    chrome.runtime.sendMessage({scope: 'extension', cmd: 'activatePopup'}, () => {
+      console.debug('Activated popup by auto open')
     })
   } else {
     // Check if button is activated for this tab

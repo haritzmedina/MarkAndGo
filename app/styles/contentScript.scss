@@ -1,8 +1,11 @@
 @import '../../node_modules/jquery-contextmenu/src/sass/jquery.contextMenu';
 
+@import '../../node_modules/awesomplete/awesomplete';
+
 @import './groupSelection';
 @import './tagWrapper';
-@import './locationManager';
+@import './modeManager';
 @import './sidebar';
-@import './slrDataExtraction';
 @import './exam';
+@import './textAnnotator';
+@import './toolset';

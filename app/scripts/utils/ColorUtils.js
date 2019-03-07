@@ -25,6 +25,10 @@ class ColorUtils {
     return Color(color).alpha(alpha).rgb().string()
   }
 
+  static colorFromString (str) {
+    return new Color(str)
+  }
+
   static customHash (str) {
     let hash = 0
     for (let i = 0; i < str.length; i++) {
@@ -41,6 +45,10 @@ class ColorUtils {
 
   static getDifferentColors (number) {
     return UniqueColors.unique_colors(number)
+  }
+
+  static isDark (str) {
+    return Color(str).isDark()
   }
 }
 

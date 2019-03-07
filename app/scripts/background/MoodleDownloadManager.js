@@ -32,15 +32,16 @@ class MoodleDownloadManager {
           if (err) {
             suggest() // Suggest default
           } else {
+            let fileExtensionArray = []
             if (fileExtensions) {
-              let fileExtensionArray = JSON.parse(fileExtensions.data).split(',')
-              let originalFilenameExtension = _.last(downloadItem.filename.split('.'))
-              let matchExtension = _.find(fileExtensionArray, (ext) => { return ext === originalFilenameExtension })
-              if (_.isString(matchExtension)) {
-                suggest({filename: downloadItem.filename + '.txt'})
-              } else {
-                suggest()
-              }
+              fileExtensionArray = (JSON.parse(fileExtensions.data) + defaultFileExtensionsAsPlainText).split(',')
+            } else {
+              fileExtensionArray = defaultFileExtensionsAsPlainText.split(',')
+            }
+            let originalFilenameExtension = _.last(downloadItem.filename.split('.'))
+            let matchExtension = _.find(fileExtensionArray, (ext) => { return ext === originalFilenameExtension })
+            if (_.isString(matchExtension)) {
+              suggest({filename: downloadItem.filename + '.txt'})
             } else {
               suggest()
             }
@@ -54,21 +55,58 @@ class MoodleDownloadManager {
     })
 
     chrome.downloads.onChanged.addListener((downloadItem) => {
+      // Download is pending
       if (this.files[downloadItem.id] && downloadItem.filename && downloadItem.filename.current) {
         // Save download file path
+        let files = _.values(_.forIn(window.background.moodleDownloadManager.files, (file, key) => { file.key = key }))
         if (downloadItem.filename.current.startsWith('/')) { // Unix-based filesystem
+          let repeatedLocalFiles = _.filter(files, (file) => { return file.localPath === encodeURI('file://' + downloadItem.filename.current) })
+          _.forEach(repeatedLocalFiles, (repeatedLocalFiles) => {
+            delete window.background.moodleDownloadManager.files[repeatedLocalFiles.key]
+          })
           this.files[downloadItem.id]['localPath'] = encodeURI('file://' + downloadItem.filename.current)
         } else { // Windows-based filesystem
+          let repeatedLocalFiles = _.filter(files, (file) => { return file.localPath === encodeURI('file:///' + _.replace(downloadItem.filename.current, /\\/g, '/')) })
+          _.forEach(repeatedLocalFiles, (repeatedLocalFiles) => {
+            delete window.background.moodleDownloadManager.files[repeatedLocalFiles.key]
+          })
           this.files[downloadItem.id]['localPath'] = encodeURI('file:///' + _.replace(downloadItem.filename.current, /\\/g, '/'))
         }
+      } else if (_.isObject(downloadItem.state) && downloadItem.state.current === 'complete') { // When the download is finished
         // If mag is set in the URL, open a new tab with the document
         if (this.files[downloadItem.id]['mag'] && this.files[downloadItem.id]['studentId']) {
-          setTimeout(() => {
-            let localUrl = this.files[downloadItem.id]['localPath'] + '#mag:' + this.files[downloadItem.id]['mag'] + '&studentId:' + this.files[downloadItem.id]['studentId']
-            chrome.tabs.create({url: localUrl}, (tab) => {
-              this.files[downloadItem.id]['mag'] = null
-            })
-          }, 2000) // TODO Check how can it works for all the download speeds
+          let localUrl = this.files[downloadItem.id]['localPath'] + '#mag:' + this.files[downloadItem.id]['mag'] + '&studentId:' + this.files[downloadItem.id]['studentId']
+          chrome.extension.isAllowedFileSchemeAccess((isAllowedAccess) => {
+            if (isAllowedAccess === false) {
+              chrome.tabs.create({ url: chrome.runtime.getURL('pages/filePermission.html') })
+            } else {
+              // Open the file automatically
+              chrome.tabs.create({url: localUrl}, () => {
+                this.files[downloadItem.id]['mag'] = null
+              })
+            }
+          })
+        } else {
+          // Check if auto-open option is activated
+          ChromeStorage.getData('autoOpenFiles', ChromeStorage.sync, (err, result) => {
+            if (err) {
+
+            } else {
+              let autoOpen = result.activated // TODO Change
+              if (autoOpen) {
+                let localUrl = this.files[downloadItem.id]['localPath'] + '#autoOpen:true'
+                // Check if permission to access files is enabled, otherwise open a new tab with the message.
+                chrome.extension.isAllowedFileSchemeAccess((isAllowedAccess) => {
+                  if (isAllowedAccess === false) {
+                    chrome.tabs.create({ url: chrome.runtime.getURL('pages/filePermission.html') })
+                  } else {
+                    // Open the file automatically
+                    chrome.tabs.create({url: localUrl})
+                  }
+                })
+              }
+            }
+          })
         }
       }
     })
@@ -108,5 +146,7 @@ class MoodleDownloadManager {
     })
   }
 }
+
+const defaultFileExtensionsAsPlainText = 'xml,xsl,xslt,xquery,xsql,'
 
 module.exports = MoodleDownloadManager

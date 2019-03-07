@@ -4,22 +4,7 @@ import 'chromereload/devonly'
 const VersionManager = require('./background/VersionManager')
 const TourManager = require('./background/TourManager')
 
-chrome.runtime.onInstalled.addListener((details) => {
-  console.log('previousVersion', details.previousVersion)
-  // Tour manager
-  let tourManager = new TourManager()
-  tourManager.init((err, isShown) => {
-    // Version manager
-    let versionManager = new VersionManager()
-    if (err || !isShown) {
-      versionManager.init(details.previousVersion)
-    } else {
-      versionManager.setLatestVersion()
-    }
-  })
-})
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((tabId) => {
   chrome.pageAction.show(tabId)
 })
 
@@ -28,7 +13,6 @@ chrome.tabs.onCreated.addListener((tab) => {
 })
 
 const HypothesisManager = require('./background/HypothesisManager')
-const GoogleSheetsManager = require('./background/GoogleSheetsManager')
 const Popup = require('./popup/Popup')
 const MoodleDownloadManager = require('./background/MoodleDownloadManager')
 const MoodleBackgroundManager = require('./background/MoodleBackgroundManager')
@@ -47,10 +31,6 @@ class Background {
     this.hypothesisManager = new HypothesisManager()
     this.hypothesisManager.init()
 
-    // Initialize google sheets manager
-    this.googleSheetsManager = new GoogleSheetsManager()
-    this.googleSheetsManager.init()
-
     // Initialize moodle download manager
     this.moodleDownloadManager = new MoodleDownloadManager()
     this.moodleDownloadManager.init()
@@ -65,38 +45,18 @@ class Background {
 
     // Initialize page_action event handler
     chrome.pageAction.onClicked.addListener((tab) => {
-      // Check if current tab is a local file
-      if (tab.url.startsWith('file://')) {
-        // Check if permission to access file URL is enabled
-        chrome.extension.isAllowedFileSchemeAccess((isAllowedAccess) => {
-          if (isAllowedAccess === false) {
-            chrome.tabs.create({url: chrome.runtime.getURL('pages/filePermission.html')})
-          } else {
-            if (this.tabs[tab.id]) {
-              if (this.tabs[tab.id].activated) {
-                this.tabs[tab.id].deactivate()
-              } else {
-                this.tabs[tab.id].activate()
-              }
-            } else {
-              this.tabs[tab.id] = new Popup()
-              this.tabs[tab.id].activate()
-            }
-          }
-        })
-      } else {
-        if (this.tabs[tab.id]) {
-          if (this.tabs[tab.id].activated) {
-            this.tabs[tab.id].deactivate()
-          } else {
-            this.tabs[tab.id].activate()
-          }
+      if (this.tabs[tab.id]) {
+        if (this.tabs[tab.id].activated) {
+          this.tabs[tab.id].deactivate()
         } else {
-          this.tabs[tab.id] = new Popup()
           this.tabs[tab.id].activate()
         }
+      } else {
+        this.tabs[tab.id] = new Popup()
+        this.tabs[tab.id].activate()
       }
     })
+
     // On tab is reloaded
     chrome.tabs.onUpdated.addListener((tabId) => {
       if (this.tabs[tabId]) {
@@ -137,3 +97,17 @@ class Background {
 
 window.background = new Background()
 window.background.init()
+
+chrome.runtime.onInstalled.addListener((details) => {
+  // Tour manager
+  let tourManager = new TourManager()
+  tourManager.init((err, isShown) => {
+    // Version manager
+    window.background.versionManager = new VersionManager()
+    if (err || !isShown) {
+      window.background.versionManager.init(details.previousVersion)
+    } else {
+      window.background.versionManager.setLatestVersion()
+    }
+  })
+})

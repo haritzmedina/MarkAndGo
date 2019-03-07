@@ -17,6 +17,11 @@ const MoodleFunctions = {
     wsFunc: 'core_enrol_get_enrolled_users',
     testParams: '0',
     clientFunc: moodleClient.getStudents
+  },
+  getCourseModuleInfo: {
+    wsFunc: 'core_course_get_course_module',
+    testParams: {},
+    clientFunc: moodleClient.getCmidInfo
   }
 }
 

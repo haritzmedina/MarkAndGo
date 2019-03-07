@@ -7,6 +7,7 @@ class TaskManager {
   constructor () {
     this.currentTasks = []
     this.currentTask = {}
+    this.currentTaskInstance = null
   }
 
   init () {
@@ -19,13 +20,21 @@ class TaskManager {
             let students = request.data.students
             let courseId = request.data.courseId
             let task = this.prepareCreateHighlightersTask(rubric, students, courseId)
+            let numberOfAnnotationsToCreate = task.activities.length * (_.reduce(_.map(rubric.guideElements, (guideElement) => { return guideElement.levels.length }), (sum, n) => { return sum + n }) + 2)
+            let minutesPending = Math.round(numberOfAnnotationsToCreate / 60)
             this.addTasks(task)
-            let minutesPending = Math.ceil((task.activities.length / 60) * 5)
             sendResponse({minutes: minutesPending})
+          }
+        } else if (request.cmd === 'getCurrentTaskStatus') {
+          if (_.isObject(this.currentTaskInstance)) {
+            sendResponse({status: 'CreateHighlighterTask pending', statusMessage: this.currentTaskInstance.getStatus()})
+          } else {
+            sendResponse({status: 'Nothing pending'})
           }
         }
       }
     })
+    // Restore previous activities
     this.restoreTasks(() => {
       console.log('Task manager initialized')
       // Start task management
@@ -93,7 +102,9 @@ class TaskManager {
         // Task is finished
         this.notifyTask(this.currentTask.notification)
         this.removeFinishedTask()
+        this.currentTaskInstance = null
       })
+      this.currentTaskInstance = task
     }
   }
 
