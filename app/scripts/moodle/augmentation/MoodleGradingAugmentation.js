@@ -25,6 +25,11 @@ class MoodleGradingAugmentation {
             submittedFileElement.href = submittedFileElement.href + '#studentId:' +
               studentId + '&courseId:' + assignmentData.courseId + '&cmid:' + assignmentData.cmid
           })
+          // When sent files are more than 5, files are not directly shown, you need to click and another website is opened with submitted files. See https://github.com/haritzmedina/MarkAndGo/issues/13
+          let assignmentSubmissionElement = row.querySelector('a[href*="action=viewpluginassignsubmission"')
+          if (_.isElement(assignmentSubmissionElement)) {
+            assignmentSubmissionElement.href = assignmentSubmissionElement.href + '&studentId=' + studentId
+          }
         })
       }
     })
