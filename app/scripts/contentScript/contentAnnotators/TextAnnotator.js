@@ -885,7 +885,9 @@ class TextAnnotator extends ContentAnnotator {
         setTimeout(() => {
           let pdfjsHighlights = document.querySelectorAll('.highlight')
           for (let i = 0; pdfjsHighlights.length; i++) {
-            pdfjsHighlights[i].classList.remove('highlight')
+            if (_.isElement(pdfjsHighlights[i])) {
+              pdfjsHighlights[i].classList.remove('highlight')
+            }
           }
         }, 1000)
         // Redraw annotations
