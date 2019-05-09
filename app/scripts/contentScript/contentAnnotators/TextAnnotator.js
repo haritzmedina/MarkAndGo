@@ -296,14 +296,18 @@ class TextAnnotator extends ContentAnnotator {
    */
   initAnnotationsObserver (callback) {
     this.observerInterval = setInterval(() => {
-      if (this.currentAnnotations) {
-        for (let i = 0; i < this.currentAnnotations.length; i++) {
-          let annotation = this.currentAnnotations[i]
-          // Search if annotation exist
-          let element = document.querySelector('[data-annotation-id="' + annotation.id + '"]')
-          // If annotation doesn't exist, try to find it
-          if (!_.isElement(element)) {
-            Promise.resolve().then(() => { this.highlightAnnotation(annotation) })
+      console.debug('Observer interval')
+      // If a swal is displayed, do not execute highlighting observer
+      if (document.querySelector('.swal2-container') === null) { // TODO Look for a better solution...
+        if (this.currentAnnotations) {
+          for (let i = 0; i < this.currentAnnotations.length; i++) {
+            let annotation = this.currentAnnotations[i]
+            // Search if annotation exist
+            let element = document.querySelector('[data-annotation-id="' + annotation.id + '"]')
+            // If annotation doesn't exist, try to find it
+            if (!_.isElement(element)) {
+              Promise.resolve().then(() => { this.highlightAnnotation(annotation) })
+            }
           }
         }
       }
