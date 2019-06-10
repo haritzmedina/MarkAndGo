@@ -210,7 +210,7 @@ class ContentTypeManager {
     let fileTextContentElement = document.querySelector('body > pre')
     if (fileTextContentElement) {
       let fileTextContent = fileTextContentElement.innerText
-      this.documentFingerprint = CryptoUtils.hash(fileTextContent.innerText)
+      this.documentFingerprint = CryptoUtils.hash(fileTextContent)
     }
   }
 }

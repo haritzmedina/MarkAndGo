@@ -351,6 +351,7 @@ class TextAnnotator extends ContentAnnotator {
       url: window.abwa.contentTypeManager.getDocumentURIToSearchInHypothesis(),
       uri: window.abwa.contentTypeManager.getDocumentURIToSaveInHypothesis(),
       group: window.abwa.groupSelector.currentGroup.id,
+      tags: ['exam:cmid:' + window.abwa.contentTypeManager.fileMetadata.cmid],
       order: 'asc'
     }, (err, annotations) => {
       if (err) {
