@@ -8,6 +8,8 @@ before_install:
   - sudo apt-get install g++ build-essential # Build essential to compile the integration-test platform
   - sudo apt install default-jre default-jdk # Java instalation for webdriverio
   - CHROME_BIN=google-chrome # Set chrome bin path for karma tests runner
+jdk:
+  - oraclejdk9
 services:
   - xvfb # Create display and start x-window to run chrome
 before_script:
