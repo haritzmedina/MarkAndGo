@@ -162,7 +162,7 @@ class MoodleGradingManager {
     return {
       'userid': userId + '',
       'assignmentid': assignmentId,
-      'attemptnumber': '0',
+      'attemptnumber': '-1',
       'addattempt': 1,
       'workflowstate': '',
       'applytoall': 1,
