@@ -118,7 +118,11 @@ class LanguageUtils {
    * @returns {*}
    */
   static normalizeString (string) {
-    return string.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    if (_.isString(string)) {
+      return string.normalize('NFD').replace(/[^\w\s]/gi, '')
+    } else {
+      throw new Error('You are trying to normalize something that it is not an string: ' + string)
+    }
   }
 
   static getStringBetween (string, previous, after) {

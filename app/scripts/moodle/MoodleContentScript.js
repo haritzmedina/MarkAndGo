@@ -202,7 +202,7 @@ class MoodleContentScript {
         // Generate rubric model
         for (let i = 0; i < rubricCriteria.length; i++) {
           let moodleCriteria = rubricCriteria[i]
-          let criteria = new Criteria({name: moodleCriteria.description, criteriaId: moodleCriteria.id, rubric: rubric})
+          let criteria = new Criteria({name: LanguageUtils.normalizeString(moodleCriteria.description), criteriaId: moodleCriteria.id, rubric: rubric})
           for (let j = 0; j < moodleCriteria.levels.length; j++) {
             let moodleLevel = moodleCriteria.levels[j]
             let level = new Level({name: moodleLevel.score, levelId: moodleLevel.id, description: moodleLevel.definition, criteria: criteria})
