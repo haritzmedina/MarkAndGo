@@ -1,17 +1,21 @@
 language: node_js
 node_js:
+  - v8
+  - v9
   - v10
 addons:
   chrome: stable
+services:
+  - xvfb # From: https://docs.travis-ci.com/user/gui-and-headless-browsers/#using-xvfb-to-run-tests-that-require-a-gui
+  - neo4j # From: https://docs.travis-ci.com/user/database-setup/#neo4j
 before_install:
   - sudo apt-get update
-  - sudo apt-get install g++ build-essential # Build essential to compile the integration-test platform
-  - CHROME_BIN=google-chrome # Set chrome bin path for karma tests runner
 before_script:
   - npm install -g gulp-cli
   - npm install babel-plugin-transform-es3-member-expression-literals # Fix a bug to compile dom-seek and dom-node-iterator
 script:
   - gulp
+  - npm test
 cache:
   directories:
     - node_modules
