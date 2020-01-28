@@ -7,10 +7,8 @@ const GroupSelector = require('./GroupSelector')
 const Config = require('../Config')
 const AnnotationBasedInitializer = require('./AnnotationBasedInitializer')
 const UserFilter = require('./UserFilter')
-const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
 const RolesManager = require('./RolesManager')
 const RubricManager = require('./RubricManager')
-const MarkAndGoToolset = require('../specific/exams/MarkAndGoToolset')
 
 class ContentScriptManager {
   constructor () {
@@ -22,6 +20,7 @@ class ContentScriptManager {
     console.log('Initializing content script manager')
     this.status = ContentScriptManager.status.initializing
     this.loadContentTypeManager(() => {
+      const HypothesisClientManager = require('../hypothesis/HypothesisClientManager')
       window.abwa.hypothesisClientManager = new HypothesisClientManager()
       window.abwa.hypothesisClientManager.init(() => {
         window.abwa.sidebar = new Sidebar()
@@ -83,6 +82,7 @@ class ContentScriptManager {
   }
 
   initToolset () {
+    const MarkAndGoToolset = require('../specific/exams/MarkAndGoToolset')
     window.abwa.toolset = new MarkAndGoToolset()
     window.abwa.toolset.init()
   }

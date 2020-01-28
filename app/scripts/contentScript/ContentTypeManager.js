@@ -21,6 +21,8 @@ class ContentTypeManager {
   init (callback) {
     if (document.querySelector('embed[type="application/pdf"]')) {
       window.location = chrome.extension.getURL('content/pdfjs/web/viewer.html') + '?file=' + encodeURIComponent(window.location.href)
+    } else if (this.isPlainTextFile()) {
+      window.location = chrome.extension.getURL('content/plainTextFileViewer/index.html') + '?file=' + encodeURIComponent(window.location.href)
     } else {
       // Load publication metadata
       this.tryToLoadDoi()
@@ -76,16 +78,20 @@ class ContentTypeManager {
         if (this.urlParam) {
           this.documentURL = this.urlParam
         } else {
-          if (window.location.href.startsWith('file:///')) {
+          if (window.location.href.startsWith('file:///') || window.location.pathname === '/content/plainTextFileViewer/index.html') {
+            let url = window.location.href
+            if (window.location.pathname === '/content/plainTextFileViewer/index.html') {
+              url = (new URL(document.location)).searchParams.get('file')
+            }
             this.localFile = true
             // Check in moodle download manager if the file exists
-            chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: URLUtils.retrieveMainUrl(window.location.href)}}, (fileMetadata) => {
+            chrome.runtime.sendMessage({scope: 'annotationFile', cmd: 'fileMetadata', data: {filepath: URLUtils.retrieveMainUrl(url)}}, (fileMetadata) => {
               if (_.isEmpty(fileMetadata)) {
                 // Warn user document is not from moodle
                 Alerts.warningAlert({
                   text: 'Try to download the file again from moodle and if the error continues check <a href="https://github.com/haritzmedina/MarkAndGo/wiki/Most-common-errors-in-Mark&Go#file-is-not-from-moodle">this</a>.',
                   title: 'This file is not downloaded from moodle'})
-                this.documentURL = URLUtils.retrieveMainUrl(window.location.href)
+                this.documentURL = URLUtils.retrieveMainUrl(url)
               } else {
                 this.fileMetadata = fileMetadata.file
                 this.documentURL = fileMetadata.file.url
@@ -108,6 +114,11 @@ class ContentTypeManager {
         }
       }
     }
+  }
+
+  isPlainTextFile () {
+    let extension = window.location.href.split('.').pop().split(/#|\?/g)[0]
+    return 'xml,xsl,xslt,xquery,xsql,'.split(',').includes(extension)
   }
 
   destroy (callback) {
