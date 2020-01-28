@@ -885,7 +885,7 @@ class TextAnnotator extends ContentAnnotator {
         // Timeout to remove highlight used by PDF.js
         setTimeout(() => {
           let pdfjsHighlights = document.querySelectorAll('.highlight')
-          for (let i = 0; pdfjsHighlights.length; i++) {
+          for (let i = 0; pdfjsHighlights.length > i; i++) {
             if (_.isElement(pdfjsHighlights[i])) {
               pdfjsHighlights[i].classList.remove('highlight')
             }
