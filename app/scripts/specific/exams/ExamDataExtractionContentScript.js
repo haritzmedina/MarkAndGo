@@ -30,10 +30,15 @@ class ExamDataExtractionContentScript {
           window.abwa.toolset.show()
         } else { // Change to viewing mode
           window.abwa.specific = window.abwa.specific || {}
-          window.abwa.tagManager.showViewingTagsContainer()
+          window.abwa.tagManager.showMarkingTagsContainer()
           window.abwa.sidebar.openSidebar()
           // Toolset hide
           window.abwa.toolset.hide()
+
+          window.abwa.specific.assessmentManager = new AssessmentManager({
+            cmid: window.abwa.rubricManager.rubric.cmid
+          })
+          window.abwa.specific.assessmentManager.init()
           // Log student reviewed the exam
           // window.abwa.specific.studentLogging = new StudentLogging()
           // window.abwa.specific.studentLogging.init()

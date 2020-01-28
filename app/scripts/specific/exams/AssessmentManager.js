@@ -4,6 +4,7 @@ const Alerts = require('../../utils/Alerts')
 const Mark = require('./Mark')
 const _ = require('lodash')
 const Rubric = require('../../model/Rubric')
+const RolesManager = require('../../contentScript/RolesManager')
 
 const RETRIEVE_PREVIOUS_ASSIGNMENT_INTERVAL_IN_SECONDS = 60
 const RETRIEVE_ANNOTATIONS_FOR_ASSIGNMENT_INTERVAL_IN_SECONDS = 10
@@ -32,7 +33,9 @@ class AssessmentManager {
       }, RETRIEVE_PREVIOUS_ASSIGNMENT_INTERVAL_IN_SECONDS * 1000)
     })
     // Init event handlers
-    this.initEvents()
+    if (window.abwa.roleManager.role === RolesManager.roles.teacher) {
+      this.initEvents()
+    }
   }
 
   destroy () {
