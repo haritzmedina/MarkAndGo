@@ -16,6 +16,8 @@ describe('Sidebar loading testing', function () {
       let extensionPage = await browser.newPage()
       await extensionPage.goto('https://en.wikipedia.org/wiki/Hypothes.is#mag:f')
 
+      await delay(3000)
+
       extensionPage.click('#abwaSidebarButton')
 
       await delay(1000)
