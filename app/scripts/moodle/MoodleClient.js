@@ -96,8 +96,11 @@ class MoodleClient {
         return jsonFormData(data)
       }]
     }
+    // Request need to be done twice due to a moodle bug detected in #20
     axios(settings).then((response) => {
-      callback(null, response.data)
+      axios(settings).then((response) => {
+        callback(null, response.data)
+      })
     })
   }
 
