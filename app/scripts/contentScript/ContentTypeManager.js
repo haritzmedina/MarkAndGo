@@ -118,7 +118,7 @@ class ContentTypeManager {
 
   isPlainTextFile () {
     let extension = window.location.href.split('.').pop().split(/#|\?/g)[0]
-    return 'xml,xsl,xslt,xquery,xsql,'.split(',').includes(extension)
+    return 'xml,xsl,xslt,xquery,xsql,html'.split(',').includes(extension)
   }
 
   destroy (callback) {
