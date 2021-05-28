@@ -1,6 +1,6 @@
 | :exclamation:  This repository won't be longer updated   |
 |-----------------------------------------|
-| Development of [Mark&Go browser extension](https://rebrand.ly/markAndGo) is moved to [onekin/WACline](https://github.com/onekin/wacline), a Software Product line for web annotation clients. |
+| Development of [Mark&Go browser extension](https://rebrand.ly/markAndGo) is now part of [onekin/WACline](https://github.com/onekin/wacline), a Software Product line for web annotation clients. |
 
 # Mark And Go
 [![Build Status](https://travis-ci.com/haritzmedina/MarkAndGo.svg?branch=master)](https://travis-ci.com/haritzmedina/MarkAndGo)
